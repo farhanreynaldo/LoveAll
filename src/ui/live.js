@@ -42,8 +42,9 @@ export function renderLive(root, go, session) {
           <p style="color:var(--text-secondary);font-size:14px;">All scheduled rounds complete.</p>
           <p style="color:var(--text-secondary);font-size:13px;margin-top:8px;">Tap ⋯ to end the session.</p>
         </div>
+        ${menuOpen ? menuHtml() : ''}
       `;
-      root.querySelector('#menu-btn').onclick = () => { menuOpen = true; render(); };
+      bind();
       return;
     }
 
@@ -126,14 +127,24 @@ export function renderLive(root, go, session) {
         </div>
         <div class="card" style="padding:4px 12px;" id="schedule-card">
           ${scheduleExpanded
-            ? upcoming.map((r, i) => `
-                <div class="schedule-item ${r.status}">
-                  <span>R${idx + 2 + i} · ${escapeHtml(r.teamA.map(playerName).join('/'))} vs ${escapeHtml(r.teamB.map(playerName).join('/'))}</span>
-                </div>
-              `).join('')
-            : `<div class="schedule-item" style="opacity:0.6;font-size:13px;">
-                R${idx + 2} · ${escapeHtml(upcoming[0].teamA.map(playerName).join('/'))} vs ${escapeHtml(upcoming[0].teamB.map(playerName).join('/'))}
-              </div>`
+            ? upcoming.map((r, i) => {
+                const realIdx = state.schedule.indexOf(r);
+                const roundNum = realIdx + 1;
+                if (editingRoundIdx === realIdx) {
+                  return editorHtml(realIdx);
+                }
+                return `
+                  <div class="schedule-item ${r.status}" data-round-idx="${realIdx}" style="cursor:${r.status === 'tentative' ? 'pointer' : 'default'};">
+                    <span>R${roundNum} · ${escapeHtml(r.teamA.map(playerName).join('/'))} vs ${escapeHtml(r.teamB.map(playerName).join('/'))}</span>
+                  </div>
+                `;
+              }).join('')
+            : (() => {
+                const realIdx0 = state.schedule.indexOf(upcoming[0]);
+                return `<div class="schedule-item" style="opacity:0.6;font-size:13px;">
+                  R${realIdx0 + 1} · ${escapeHtml(upcoming[0].teamA.map(playerName).join('/'))} vs ${escapeHtml(upcoming[0].teamB.map(playerName).join('/'))}
+                </div>`;
+              })()
           }
         </div>
       ` : ''}
@@ -211,8 +222,9 @@ export function renderLive(root, go, session) {
         const idx = currentRoundIndex();
         if (idx < 0) return;
         state = applyScore(state, idx, scoreDraft[0], scoreDraft[1]);
+        const newIdx = currentRoundIndex();
         const rng = createRng((state.seed + idx + 1) >>> 0);
-        const reopt = reoptimizeFrom(state, idx + 2, state.weights, rng);
+        const reopt = reoptimizeFrom(state, newIdx + 1, state.weights, rng);
         state = { ...state, schedule: reopt };
         scoreDraft = [0, 0];
         persist();
@@ -299,6 +311,75 @@ export function renderLive(root, go, session) {
       root.querySelector('#m-settings').onclick = () => {
         menuOpen = false;
         go('settings', state);
+      };
+    }
+
+    // Open inline editor for tentative upcoming rounds
+    root.querySelectorAll('.schedule-item.tentative[data-round-idx]').forEach(item => {
+      item.onclick = () => {
+        const i = +item.dataset.roundIdx;
+        const r = state.schedule[i];
+        editingRoundIdx = i;
+        editTeamA = [...r.teamA];
+        editTeamB = [...r.teamB];
+        editResting = state.players.map(p => p.id).filter(id => !r.teamA.includes(id) && !r.teamB.includes(id));
+        selectedChip = null;
+        render();
+      };
+    });
+
+    // Player chip tap — select or swap
+    root.querySelectorAll('.player-chip[data-zone]').forEach(chip => {
+      chip.onclick = () => {
+        const zone = chip.dataset.zone;
+        const chipIdx = +chip.dataset.chipIdx;
+        if (!selectedChip) {
+          selectedChip = { zone, index: chipIdx };
+          render();
+          return;
+        }
+        // Tapping the same chip deselects
+        if (selectedChip.zone === zone && selectedChip.index === chipIdx) {
+          selectedChip = null;
+          render();
+          return;
+        }
+        // Swap the two players
+        const zoneArrays = { A: editTeamA, B: editTeamB, R: editResting };
+        const fromArr = zoneArrays[selectedChip.zone];
+        const toArr = zoneArrays[zone];
+        const fromId = fromArr[selectedChip.index];
+        const toId = toArr[chipIdx];
+        fromArr[selectedChip.index] = toId;
+        toArr[chipIdx] = fromId;
+        selectedChip = null;
+        render();
+      };
+    });
+
+    // Cancel inline editor
+    const cancelEditBtn = root.querySelector('#editor-cancel');
+    if (cancelEditBtn) {
+      cancelEditBtn.onclick = () => {
+        editingRoundIdx = null;
+        selectedChip = null;
+        render();
+      };
+    }
+
+    // Save inline editor
+    const saveEditBtn = root.querySelector('#editor-save');
+    if (saveEditBtn) {
+      saveEditBtn.onclick = () => {
+        const i = editingRoundIdx;
+        state.schedule[i] = { ...state.schedule[i], teamA: [...editTeamA], teamB: [...editTeamB] };
+        const rng = createRng((state.seed + i + 5000) >>> 0);
+        const reopt = reoptimizeFrom(state, i + 1, state.weights, rng);
+        state = { ...state, schedule: reopt };
+        persist();
+        editingRoundIdx = null;
+        selectedChip = null;
+        render();
       };
     }
   }
