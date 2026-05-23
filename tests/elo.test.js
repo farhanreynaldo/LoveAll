@@ -2,10 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { seedElo, expectedScore, updateElo } from '../src/elo.js';
 
-test('seedElo maps 1..5 to 1100..1500', () => {
-  assert.equal(seedElo(1), 1100);
-  assert.equal(seedElo(3), 1300);
-  assert.equal(seedElo(5), 1500);
+test('seedElo maps 3 skill levels to Elo ratings', () => {
+  assert.equal(seedElo(1), 1100);  // Low
+  assert.equal(seedElo(2), 1300);  // Mid
+  assert.equal(seedElo(3), 1500);  // High
 });
 
 test('expectedScore is 0.5 for equal ratings', () => {

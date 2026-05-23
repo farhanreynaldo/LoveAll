@@ -25,7 +25,7 @@ test('createSession initializes players, schedule, weights, rng seed', () => {
   assert.equal(s.weights.rest, 1000);
   assert.equal(s.seed, 42);
   for (const p of PLAYERS) {
-    assert.equal(s.elo[p.id], 1300);
+    assert.equal(s.elo[p.id], 1500);  // seedSkill: 3 (High) maps to 1500
     assert.equal(s.roundsPlayed[p.id], 0);
   }
 });
@@ -64,9 +64,9 @@ test('recomputeFromCompleted rebuilds derived state from scratch', () => {
 
 test('addPlayer extends roster and zeroes their counts', () => {
   const s = createSession({ players: PLAYERS, targetRounds: 4, seed: 1 });
-  const next = addPlayer(s, { id: 'g', name: 'Kai', seedSkill: 4 });
+  const next = addPlayer(s, { id: 'g', name: 'Kai', seedSkill: 2 });  // Mid skill level
   assert.equal(next.players.length, 7);
-  assert.equal(next.elo.g, 1400);
+  assert.equal(next.elo.g, 1300);  // seedSkill: 2 (Mid) maps to 1300
   assert.equal(next.roundsPlayed.g, 0);
   assert.equal(next.partnerCounts.a.g, 0);
 });

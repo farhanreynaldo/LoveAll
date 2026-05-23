@@ -1,7 +1,9 @@
 // Elo for doubles, with margin-aware actual score.
 
+// Maps 3 skill levels (1=Low, 2=Mid, 3=High) to Elo seeds.
 export function seedElo(seedSkill) {
-  return 1000 + 100 * seedSkill;
+  const map = { 1: 1100, 2: 1300, 3: 1500 };
+  return map[seedSkill] ?? 1300;
 }
 
 export function expectedScore(ratingA, ratingB) {
