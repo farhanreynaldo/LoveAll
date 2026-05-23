@@ -1,3 +1,5 @@
+import { seedElo } from '../elo.js';
+
 export function renderPlayer(root, go, session, playerId) {
   const state = session;
   const player = state.players.find(p => p.id === playerId);
@@ -34,7 +36,7 @@ export function renderPlayer(root, go, session, playerId) {
     <div class="summary-hero">
       <div class="meta">Elo</div>
       <div class="big">${elo}</div>
-      <div class="meta">started at ${1000 + 100 * player.seedSkill} (seed ${player.seedSkill}/5)</div>
+      <div class="meta">started at ${seedElo(player.seedSkill)} (skill ${['', 'Low', 'Mid', 'High'][player.seedSkill] ?? 'Mid'})</div>
     </div>
 
     <div class="label">Record</div>
