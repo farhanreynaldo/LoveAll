@@ -29,38 +29,84 @@ export function renderLive(root, go, session) {
 
   function render() {
     const idx = currentRoundIndex();
+    const round = state.schedule[idx];
+
+    // No auto-navigate — session ends via "End Session" in menu only.
     if (idx < 0) {
-      go('summary', state);
+      root.innerHTML = `
+        <div class="screen-header">
+          <div class="title">Session</div>
+          <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
+        </div>
+        <div class="card" style="text-align:center;padding:24px;">
+          <p style="color:var(--text-secondary);font-size:14px;">All scheduled rounds complete.</p>
+          <p style="color:var(--text-secondary);font-size:13px;margin-top:8px;">Tap ⋯ to end the session.</p>
+        </div>
+      `;
+      root.querySelector('#menu-btn').onclick = () => { menuOpen = true; render(); };
       return;
     }
-    const round = state.schedule[idx];
-    const isLocked = round.status === 'locked';
+
     if (round.score && scoreDraft[0] === 0 && scoreDraft[1] === 0) {
       scoreDraft = [...round.score];
     }
-    const nextRound = state.schedule[idx + 1];
+
     const restingIds = state.players
       .map(p => p.id)
       .filter(id => !round.teamA.includes(id) && !round.teamB.includes(id));
 
+    const upcoming = state.schedule
+      .slice(idx + 1)
+      .filter(r => r.status !== 'completed' && r.status !== 'skipped')
+      .slice(0, 5);
+
     root.innerHTML = `
       <div class="screen-header">
-        <div class="title">Round ${idx + 1} of ${state.targetRounds}</div>
+        <div class="title">Round ${idx + 1}</div>
         <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
       </div>
 
+      <div class="label">Now playing</div>
+      <div class="card">
+        <div class="row" style="padding:10px 4px;">
+          <span style="font-size:15px;font-weight:500;">${escapeHtml(round.teamA.map(playerName).join(' · '))}</span>
+        </div>
+        <div style="padding:2px 4px;color:var(--text-secondary);font-size:13px;">vs</div>
+        <div class="row" style="padding:10px 4px;border-bottom:none;">
+          <span style="font-size:15px;font-weight:500;">${escapeHtml(round.teamB.map(playerName).join(' · '))}</span>
+        </div>
+      </div>
+
+      ${restingIds.length > 0 ? `
+        <div class="label">Resting</div>
+        <div class="card">
+          <div class="row" style="border-bottom:none;padding:10px 4px;">
+            <span style="font-size:14px;color:var(--text-secondary);">${escapeHtml(restingIds.map(playerName).join(' · '))}</span>
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="label">Game done? Enter final score</div>
       <div class="card">
         <div class="match-team">
-          <div class="names">${escapeHtml(round.teamA.map(playerName).join(' · '))}</div>
-          <div class="score">${scoreDraft[0]}</div>
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
+              ${escapeHtml(round.teamA.map(playerName).join(' · '))}
+            </div>
+            <div class="score">${scoreDraft[0]}</div>
+          </div>
         </div>
         <div class="score-controls">
           <button data-team="0" data-delta="-1">−</button>
           <button data-team="0" data-delta="1">+</button>
         </div>
-        <div class="match-team" style="border-top: 1px solid var(--border-soft); margin-top: 8px;">
-          <div class="names">${escapeHtml(round.teamB.map(playerName).join(' · '))}</div>
-          <div class="score">${scoreDraft[1]}</div>
+        <div class="match-team" style="border-top:1px solid var(--border-soft);margin-top:8px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
+              ${escapeHtml(round.teamB.map(playerName).join(' · '))}
+            </div>
+            <div class="score">${scoreDraft[1]}</div>
+          </div>
         </div>
         <div class="score-controls">
           <button data-team="1" data-delta="-1">−</button>
@@ -68,30 +114,27 @@ export function renderLive(root, go, session) {
         </div>
       </div>
 
-      ${!isLocked ? `<button class="btn small ghost" id="start-btn" style="margin-top:8px;">Start round</button>` : ''}
-      <button class="btn" id="save-btn" style="margin-top:8px;" ${scoreDraft[0] + scoreDraft[1] === 0 ? 'disabled' : ''}>
-        Save &amp; next round
+      <button class="btn" id="save-btn" style="margin-top:8px;"
+        ${scoreDraft[0] + scoreDraft[1] === 0 ? 'disabled' : ''}>
+        Save &amp; next round →
       </button>
 
-      <div class="next-block">
-        ${nextRound ? `Up next · ${escapeHtml(nextRound.teamA.map(playerName).join(', '))} vs ${escapeHtml(nextRound.teamB.map(playerName).join(', '))}<br>` : ''}
-        Resting · ${escapeHtml(restingIds.map(playerName).join(', ')) || '—'}
-      </div>
-
-      <div class="label" id="sched-toggle" style="cursor:pointer;">
-        ${scheduleExpanded ? '▾' : '▸'} Full schedule
-      </div>
-      ${scheduleExpanded ? `
-        <div class="card schedule-list">
-          ${state.schedule.map((r, i) => {
-            if (editingRoundIdx === i) return editorHtml(i);
-            return `
-              <div class="schedule-item ${r.status} ${r.manuallyEdited ? 'edited' : ''}" data-round-idx="${i}">
-                <span>R${i+1} · ${escapeHtml(r.teamA.map(playerName).join(', '))} vs ${escapeHtml(r.teamB.map(playerName).join(', '))}</span>
-                <span>${r.score ? `${r.score[0]}–${r.score[1]}` : ''}</span>
-              </div>
-            `;
-          }).join('')}
+      ${upcoming.length > 0 ? `
+        <div class="label" id="schedule-toggle" style="cursor:pointer;display:flex;justify-content:space-between;">
+          <span>Upcoming rounds</span>
+          <span>${scheduleExpanded ? '▴' : '▾'}</span>
+        </div>
+        <div class="card" style="padding:4px 12px;" id="schedule-card">
+          ${scheduleExpanded
+            ? upcoming.map((r, i) => `
+                <div class="schedule-item ${r.status}">
+                  <span>R${idx + 2 + i} · ${escapeHtml(r.teamA.map(playerName).join('/'))} vs ${escapeHtml(r.teamB.map(playerName).join('/'))}</span>
+                </div>
+              `).join('')
+            : `<div class="schedule-item" style="opacity:0.6;font-size:13px;">
+                R${idx + 2} · ${escapeHtml(upcoming[0].teamA.map(playerName).join('/'))} vs ${escapeHtml(upcoming[0].teamB.map(playerName).join('/'))}
+              </div>`
+          }
         </div>
       ` : ''}
 
@@ -138,12 +181,12 @@ export function renderLive(root, go, session) {
     return `
       <div class="menu-sheet" id="menu-sheet">
         <div class="menu">
+          <button id="end-session-btn">End session</button>
           <button id="m-dark">Toggle dark mode</button>
           <button id="m-add">Add player</button>
           <button id="m-remove">Remove player</button>
           <button id="m-skip">Skip current round</button>
           <button id="m-settings">Fairness settings</button>
-          <button id="m-end">End session early</button>
           <button id="m-cancel" style="color:var(--text-secondary)">Close</button>
         </div>
       </div>
@@ -151,7 +194,8 @@ export function renderLive(root, go, session) {
   }
 
   function bind() {
-    root.querySelectorAll('.score-controls button').forEach(btn => {
+    // Score controls
+    root.querySelectorAll('[data-delta]').forEach(btn => {
       btn.onclick = () => {
         const team = +btn.dataset.team;
         const delta = +btn.dataset.delta;
@@ -160,30 +204,43 @@ export function renderLive(root, go, session) {
       };
     });
 
-    const startBtn = root.querySelector('#start-btn');
-    if (startBtn) {
-      startBtn.onclick = () => {
+    // Save & next
+    const saveBtn = root.querySelector('#save-btn');
+    if (saveBtn) {
+      saveBtn.onclick = () => {
         const idx = currentRoundIndex();
-        state.schedule[idx].status = 'locked';
+        if (idx < 0) return;
+        state = applyScore(state, idx, scoreDraft[0], scoreDraft[1]);
+        const rng = createRng((state.seed + idx + 1) >>> 0);
+        const reopt = reoptimizeFrom(state, idx + 2, state.weights, rng);
+        state = { ...state, schedule: reopt };
+        scoreDraft = [0, 0];
         persist();
         render();
       };
     }
 
-    root.querySelector('#save-btn').onclick = () => {
-      const idx = currentRoundIndex();
-      if (scoreDraft[0] + scoreDraft[1] === 0) return;
-      state = applyScore(state, idx, scoreDraft[0], scoreDraft[1]);
-      const rng = createRng((state.seed + idx + 1) >>> 0);
-      const reopt = reoptimizeFrom(state, idx + 2, state.weights, rng);
-      state = { ...state, schedule: reopt };
-      scoreDraft = [0, 0];
-      persist();
-      render();
-    };
+    // Schedule toggle
+    const toggle = root.querySelector('#schedule-toggle');
+    if (toggle) {
+      toggle.onclick = () => {
+        scheduleExpanded = !scheduleExpanded;
+        render();
+      };
+    }
 
-    root.querySelector('#menu-btn').onclick = () => { menuOpen = true; render(); };
+    // Menu open
+    const menuBtn = root.querySelector('#menu-btn');
+    if (menuBtn) {
+      menuBtn.onclick = () => { menuOpen = true; render(); };
+    }
+
+    // Menu interactions (when open)
     if (menuOpen) {
+      // End session
+      const endBtn = root.querySelector('#end-session-btn');
+      if (endBtn) endBtn.onclick = () => { menuOpen = false; go('summary', state); };
+
       root.querySelector('#menu-sheet').onclick = e => {
         if (e.target.id === 'menu-sheet' || e.target.id === 'm-cancel') {
           menuOpen = false; render();
@@ -197,7 +254,7 @@ export function renderLive(root, go, session) {
       root.querySelector('#m-add').onclick = () => {
         const name = prompt('New player name?');
         if (!name || !name.trim()) { menuOpen = false; render(); return; }
-        if (state.players.length >= 8) { alert('Max 8 players.'); menuOpen = false; render(); return; }
+        if (state.players.length >= 12) { alert('Max 12 players.'); menuOpen = false; render(); return; }
         const skillStr = prompt('Seed skill 1–5?', '3');
         const skill = Math.max(1, Math.min(5, parseInt(skillStr, 10) || 3));
         const id = `p${Date.now()}`;
@@ -216,7 +273,7 @@ export function renderLive(root, go, session) {
         if (!id || !state.players.find(p => p.id === id.trim())) {
           menuOpen = false; render(); return;
         }
-        if (state.players.length <= 6) { alert('Need at least 6 players.'); menuOpen = false; render(); return; }
+        if (state.players.length <= 4) { alert('Need at least 4 players.'); menuOpen = false; render(); return; }
         if (!confirm(`Remove ${id}?`)) { menuOpen = false; render(); return; }
         state = removePlayer(state, id.trim());
         const idx = currentRoundIndex();
@@ -243,97 +300,6 @@ export function renderLive(root, go, session) {
         menuOpen = false;
         go('settings', state);
       };
-      root.querySelector('#m-end').onclick = () => {
-        if (!confirm('End the session now and view summary?')) return;
-        menuOpen = false;
-        go('summary', state);
-      };
-    }
-
-    root.querySelector('#sched-toggle').onclick = () => {
-      scheduleExpanded = !scheduleExpanded;
-      render();
-    };
-
-    if (scheduleExpanded) {
-      root.querySelectorAll('.schedule-item.completed').forEach(el => {
-        el.onclick = () => {
-          const i = +el.dataset.roundIdx;
-          const r = state.schedule[i];
-          const current = r.score ? `${r.score[0]}-${r.score[1]}` : '';
-          const input = prompt(`Edit score for round ${i + 1} (format A-B):`, current);
-          if (!input) return;
-          const m = input.match(/^(\d+)\s*-\s*(\d+)$/);
-          if (!m) { alert('Use format like "6-3"'); return; }
-          const a = +m[1], b = +m[2];
-          state.schedule[i].score = [a, b];
-          state = recomputeFromCompleted(state);
-          const idx = currentRoundIndex();
-          const fromIdx = idx >= 0 ? idx + 1 : state.schedule.length;
-          const rng = createRng((state.seed + i + 3000) >>> 0);
-          const reopt = reoptimizeFrom(state, fromIdx, state.weights, rng);
-          state = { ...state, schedule: reopt };
-          persist();
-          render();
-        };
-      });
-
-      root.querySelectorAll('.schedule-item.tentative').forEach(el => {
-        el.onclick = () => {
-          const i = +el.dataset.roundIdx;
-          const r = state.schedule[i];
-          editingRoundIdx = i;
-          editTeamA = [...r.teamA];
-          editTeamB = [...r.teamB];
-          const onCourt = [...r.teamA, ...r.teamB];
-          editResting = state.players.map(p => p.id).filter(id => !onCourt.includes(id));
-          selectedChip = null;
-          render();
-        };
-      });
-
-      if (editingRoundIdx !== null) {
-        root.querySelectorAll('.player-chip').forEach(chipEl => {
-          chipEl.onclick = () => {
-            const zone = chipEl.dataset.zone;
-            const idx = +chipEl.dataset.chipIdx;
-            if (selectedChip && selectedChip.zone === zone && selectedChip.index === idx) {
-              selectedChip = null;
-            } else if (selectedChip) {
-              // swap selectedChip with the just-tapped chip
-              const zones = { A: editTeamA, B: editTeamB, R: editResting };
-              const src = zones[selectedChip.zone];
-              const dst = zones[zone];
-              const tmp = src[selectedChip.index];
-              src[selectedChip.index] = dst[idx];
-              dst[idx] = tmp;
-              selectedChip = null;
-            } else {
-              selectedChip = { zone, index: idx };
-            }
-            render();
-          };
-        });
-
-        const cancelBtn = root.querySelector('#editor-cancel');
-        if (cancelBtn) cancelBtn.onclick = () => {
-          editingRoundIdx = null;
-          selectedChip = null;
-          render();
-        };
-
-        const saveBtn = root.querySelector('#editor-save');
-        if (saveBtn) saveBtn.onclick = () => {
-          const i = editingRoundIdx;
-          state.schedule[i].teamA = [...editTeamA];
-          state.schedule[i].teamB = [...editTeamB];
-          state.schedule[i].manuallyEdited = true;
-          editingRoundIdx = null;
-          selectedChip = null;
-          persist();
-          render();
-        };
-      }
     }
   }
 
