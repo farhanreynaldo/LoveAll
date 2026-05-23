@@ -1,4 +1,4 @@
-import { applyScore, removePlayer, addPlayer } from '../state.js';
+import { applyScore, removePlayer, addPlayer, recomputeFromCompleted } from '../state.js';
 import { reoptimizeFrom } from '../scheduler.js';
 import { createRng } from '../rng.js';
 import { saveSession, clearSession } from '../persistence.js';
@@ -194,6 +194,30 @@ export function renderLive(root, go, session) {
       scheduleExpanded = !scheduleExpanded;
       render();
     };
+
+    if (scheduleExpanded) {
+      root.querySelectorAll('.schedule-item.completed').forEach(el => {
+        el.onclick = () => {
+          const i = +el.dataset.roundIdx;
+          const r = state.schedule[i];
+          const current = r.score ? `${r.score[0]}-${r.score[1]}` : '';
+          const input = prompt(`Edit score for round ${i + 1} (format A-B):`, current);
+          if (!input) return;
+          const m = input.match(/^(\d+)\s*-\s*(\d+)$/);
+          if (!m) { alert('Use format like "6-3"'); return; }
+          const a = +m[1], b = +m[2];
+          state.schedule[i].score = [a, b];
+          state = recomputeFromCompleted(state);
+          const idx = currentRoundIndex();
+          const fromIdx = idx >= 0 ? idx + 1 : state.schedule.length;
+          const rng = createRng((state.seed + i + 3000) >>> 0);
+          const reopt = reoptimizeFrom(state, fromIdx, state.weights, rng);
+          state = { ...state, schedule: reopt };
+          persist();
+          render();
+        };
+      });
+    }
   }
 
   function escapeHtml(s) {
