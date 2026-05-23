@@ -82,3 +82,51 @@ export function generateSchedule(state, targetRounds, weights = DEFAULT_WEIGHTS,
   }
   return rounds;
 }
+
+const REPLACE_THRESHOLD = 0.05;
+
+/**
+ * Re-optimize the unlocked, non-manually-edited tail of the schedule starting
+ * at fromIndex. Returns a NEW schedule array.
+ *
+ * State contract: `state.roundsPlayed`/`partnerCounts`/`opponentCounts` should
+ * already reflect *completed* rounds (because applyScore updated them). This
+ * function simulates forward through any tentative/locked rounds before
+ * fromIndex to account for their fairness impact when scoring later rounds.
+ */
+export function reoptimizeFrom(state, fromIndex, weights, rng) {
+  const result = state.schedule.map(r => ({ ...r, teamA: [...r.teamA], teamB: [...r.teamB] }));
+
+  let s = {
+    players: Array.isArray(state.players) && typeof state.players[0] === 'object'
+      ? state.players.map(p => p.id)
+      : state.players,
+    roundsPlayed: { ...state.roundsPlayed },
+    partnerCounts: structuredClone(state.partnerCounts),
+    opponentCounts: structuredClone(state.opponentCounts),
+    elo: { ...state.elo },
+  };
+
+  for (let i = 0; i < fromIndex; i++) {
+    const r = result[i];
+    if (r.status === 'tentative' || r.status === 'locked') {
+      s = simulate(s, r);
+    }
+  }
+
+  for (let i = fromIndex; i < result.length; i++) {
+    const existing = result[i];
+    if (existing.status === 'completed' || existing.status === 'locked' || existing.manuallyEdited) {
+      s = simulate(s, existing);
+      continue;
+    }
+    const existingCost = computeCost(existing, s, weights);
+    const candidate = pickBestCandidate(s, weights, rng);
+    const candidateCost = computeCost(candidate, s, weights);
+    if (existingCost === 0 || candidateCost < existingCost * (1 - REPLACE_THRESHOLD)) {
+      result[i] = { ...existing, teamA: candidate.teamA, teamB: candidate.teamB };
+    }
+    s = simulate(s, result[i]);
+  }
+  return result;
+}

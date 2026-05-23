@@ -5,6 +5,7 @@ import {
   pickBestCandidate,
   simulate,
   generateSchedule,
+  reoptimizeFrom,
 } from '../src/scheduler.js';
 import { createRng } from '../src/rng.js';
 import { DEFAULT_WEIGHTS } from '../src/cost.js';
@@ -95,4 +96,27 @@ test('generateSchedule distributes rest fairly for 6 players over 9 rounds', () 
   const max = Math.max(...counts);
   const min = Math.min(...counts);
   assert.ok(max - min <= 1, `rounds-played range too wide: ${min}..${max}`);
+});
+
+test('reoptimizeFrom does not touch rounds before fromIndex', () => {
+  const state = blankState(['a','b','c','d','e','f']);
+  const rng1 = createRng(1);
+  const original = generateSchedule(state, 6, DEFAULT_WEIGHTS, rng1);
+  const wrapped = original.map(c => ({ teamA: c.teamA, teamB: c.teamB, status: 'tentative', score: null, manuallyEdited: false }));
+  const reoptimized = reoptimizeFrom({ ...state, schedule: wrapped }, 3, DEFAULT_WEIGHTS, createRng(2));
+  for (let i = 0; i < 3; i++) {
+    assert.deepEqual(reoptimized[i].teamA, wrapped[i].teamA);
+    assert.deepEqual(reoptimized[i].teamB, wrapped[i].teamB);
+  }
+});
+
+test('reoptimizeFrom skips manually edited rounds', () => {
+  const state = blankState(['a','b','c','d','e','f']);
+  const sched = generateSchedule(state, 5, DEFAULT_WEIGHTS, createRng(1))
+    .map(c => ({ teamA: c.teamA, teamB: c.teamB, status: 'tentative', score: null, manuallyEdited: false }));
+  sched[2].manuallyEdited = true;
+  const before = { teamA: [...sched[2].teamA], teamB: [...sched[2].teamB] };
+  const after = reoptimizeFrom({ ...state, schedule: sched }, 0, DEFAULT_WEIGHTS, createRng(2));
+  assert.deepEqual(after[2].teamA, before.teamA);
+  assert.deepEqual(after[2].teamB, before.teamB);
 });
