@@ -31,3 +31,26 @@ export function saveDarkMode(on) {
 export function loadDarkMode() {
   return localStorage.getItem(DARK_KEY) === '1';
 }
+
+const ROSTER_KEY = 'court-shuffle:lastRoster';
+
+export function saveLastRoster(players) {
+  try {
+    // Strip ids so reuse creates fresh ids in setup
+    const roster = players.map(p => ({ name: p.name, seedSkill: p.seedSkill }));
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  } catch (e) {
+    console.error('Failed to save roster', e);
+  }
+}
+
+export function loadLastRoster() {
+  try {
+    const raw = localStorage.getItem(ROSTER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}

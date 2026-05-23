@@ -1,5 +1,5 @@
 import { createSession } from '../state.js';
-import { saveSession } from '../persistence.js';
+import { saveSession, saveLastRoster, loadLastRoster } from '../persistence.js';
 
 const MIN_PLAYERS = 6;
 const MAX_PLAYERS = 8;
@@ -10,6 +10,7 @@ export function renderSetup(root, go) {
   const players = [];   // { id, name, seedSkill }
   let targetRounds = 10;
   let nextIdCounter = 1;
+  const lastRoster = loadLastRoster();
 
   function genId() {
     return `p${nextIdCounter++}`;
@@ -37,6 +38,12 @@ export function renderSetup(root, go) {
           </div>
         `).join('')}
       </div>
+
+      ${players.length === 0 && lastRoster ? `
+        <button class="btn ghost small" id="reuse-btn" style="margin-top:8px;">
+          Reuse last roster (${lastRoster.length} players)
+        </button>
+      ` : ''}
 
       <form id="add-form" style="display:flex; gap:6px; margin-top:12px;">
         <input type="text" id="new-name" placeholder="Add player…" autocomplete="off" />
@@ -106,6 +113,16 @@ export function renderSetup(root, go) {
       };
     });
 
+    const reuseBtn = root.querySelector('#reuse-btn');
+    if (reuseBtn) {
+      reuseBtn.onclick = () => {
+        for (const p of lastRoster) {
+          players.push({ id: genId(), name: p.name, seedSkill: p.seedSkill });
+        }
+        render();
+      };
+    }
+
     root.querySelector('#rounds-down').onclick = () => {
       if (targetRounds > MIN_ROUNDS) targetRounds--;
       render();
@@ -117,6 +134,7 @@ export function renderSetup(root, go) {
 
     root.querySelector('#start-btn').onclick = () => {
       if (players.length < MIN_PLAYERS) return;
+      saveLastRoster(players);
       const session = createSession({ players: [...players], targetRounds });
       saveSession(session);
       go('live', session);
