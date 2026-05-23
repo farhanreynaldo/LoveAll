@@ -43,7 +43,7 @@ export function renderSummary(root, go, session) {
     <div class="label">Leaderboard · wins</div>
     <div class="card" style="padding: 4px 0;">
       ${leaderboard.map((p, i) => `
-        <div class="leader-row">
+        <div class="leader-row clickable" data-player-id="${p.id}">
           <span class="rank">${i + 1}</span>
           <span class="name">${escapeHtml(p.name)}</span>
           <span class="stat">${state.wins[p.id]} W · ${state.losses[p.id]} L</span>
@@ -81,6 +81,12 @@ export function renderSummary(root, go, session) {
       go('setup');
     }
   };
+  root.querySelectorAll('.leader-row.clickable').forEach(el => {
+    el.onclick = () => {
+      const pid = el.dataset.playerId;
+      go('player', state, pid);
+    };
+  });
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

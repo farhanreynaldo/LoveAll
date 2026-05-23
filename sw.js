@@ -1,4 +1,4 @@
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `court-shuffle-${VERSION}`;
 const ASSETS = [
   './',
@@ -18,6 +18,7 @@ const ASSETS = [
   './src/ui/live.js',
   './src/ui/summary.js',
   './src/ui/settings.js',
+  './src/ui/player.js',
 ];
 
 self.addEventListener('install', e => {
