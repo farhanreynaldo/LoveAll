@@ -1,88 +1,94 @@
 import { createSession } from '../state.js';
 import { saveSession, saveLastRoster, loadLastRoster } from '../persistence.js';
 
-const MIN_PLAYERS = 6;
-const MAX_PLAYERS = 8;
-const MIN_ROUNDS = 4;
-const MAX_ROUNDS = 20;
+const MIN_PLAYERS = 4;
+const MAX_PLAYERS = 12;
 
 export function renderSetup(root, go) {
-  const players = [];   // { id, name, seedSkill }
-  let targetRounds = 10;
+  const players = [];
   let nextIdCounter = 1;
+  let step = 1;
   const lastRoster = loadLastRoster();
 
-  function genId() {
-    return `p${nextIdCounter++}`;
-  }
+  function genId() { return `p${nextIdCounter++}`; }
 
   function render() {
+    if (step === 1) renderStep1();
+    else renderStep2();
+  }
+
+  function stepIndicator() {
+    return `
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:20px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${step === 1 ? 'var(--text)' : 'var(--border)'};display:inline-block;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:${step === 2 ? 'var(--text)' : 'var(--border)'};display:inline-block;"></span>
+      </div>`;
+  }
+
+  function skillDots(current) {
+    return [1, 2, 3].map(n =>
+      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}" style="cursor:pointer;"></span>`
+    ).join('');
+  }
+
+  function renderStep1() {
+    const canAdvance = players.length >= MIN_PLAYERS;
+    const needed = MIN_PLAYERS - players.length;
+
     root.innerHTML = `
+      ${stepIndicator()}
+
       <div class="screen-header">
-        <div class="title">New session</div>
-        <button class="icon-btn" id="close-btn" aria-label="close">×</button>
+        <div class="title">Who's playing?</div>
+        <span style="font-size:12px;color:var(--text-secondary);">${players.length} of ${MIN_PLAYERS} min</span>
       </div>
 
-      <div class="label">Players · ${players.length}</div>
-      <div class="card" id="players-card" style="padding: 4px 12px;">
-        ${players.length === 0 ? '<div class="row" style="color:var(--text-secondary)">No players yet</div>' : ''}
-        ${players.map((p, i) => `
-          <div class="row" data-player-idx="${i}">
-            <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}" style="border:none;background:transparent;flex:1;padding:0;font-size:15px;" />
-            <div class="skill-dots" data-idx="${i}">
-              ${[1,2,3,4,5].map(n =>
-                `<span class="dot ${p.seedSkill >= n ? 'filled' : ''}" data-skill="${n}"></span>`
-              ).join('')}
-            </div>
-            <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove" style="font-size:16px;color:var(--text-secondary);">×</button>
-          </div>
-        `).join('')}
-      </div>
+      <form id="add-form" style="display:flex;gap:6px;margin-bottom:12px;">
+        <input type="text" id="new-name" placeholder="Type a name and tap +" autocomplete="off" />
+        <button class="btn small" type="submit" ${players.length >= MAX_PLAYERS ? 'disabled' : ''} style="white-space:nowrap;">+</button>
+      </form>
 
       ${players.length === 0 && lastRoster ? `
-        <button class="btn ghost small" id="reuse-btn" style="margin-top:8px;">
+        <button class="btn ghost small" id="reuse-btn" style="margin-bottom:12px;">
           Reuse last roster (${lastRoster.length} players)
         </button>
       ` : ''}
 
-      <form id="add-form" style="display:flex; gap:6px; margin-top:12px;">
-        <input type="text" id="new-name" placeholder="Add player…" autocomplete="off" />
-        <button class="btn small" type="submit" ${players.length >= MAX_PLAYERS ? 'disabled' : ''}>+</button>
-      </form>
-
-      <div class="label">Target rounds</div>
-      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-        <span>Rounds in session</span>
-        <div class="stepper">
-          <button id="rounds-down" aria-label="fewer rounds">−</button>
-          <span class="val" id="rounds-val">${targetRounds}</span>
-          <button id="rounds-up" aria-label="more rounds">+</button>
+      ${players.length > 0 ? `
+        <div class="card" style="padding:4px 12px;">
+          ${players.map((p, i) => `
+            <div class="row" data-idx="${i}">
+              <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}"
+                style="border:none;background:transparent;flex:1;padding:0;font-size:15px;" />
+              <span style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-right:6px;">Skill</span>
+              <div class="skill-dots" data-idx="${i}">${skillDots(p.seedSkill)}</div>
+              <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove"
+                style="font-size:16px;color:var(--text-secondary);">×</button>
+            </div>
+          `).join('')}
         </div>
-      </div>
+      ` : ''}
 
-      <button class="btn" id="start-btn" style="margin-top:18px;" ${players.length < MIN_PLAYERS ? 'disabled' : ''}>
-        Start session${players.length < MIN_PLAYERS ? ` (need ${MIN_PLAYERS - players.length} more)` : ''}
+      ${!canAdvance && players.length > 0 ? `
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px;padding:0 4px;">
+          Need ${needed} more player${needed === 1 ? '' : 's'} to continue
+        </p>
+      ` : ''}
+
+      <button class="btn" id="next-btn" style="margin-top:16px;" ${!canAdvance ? 'disabled' : ''}>
+        Next →
       </button>
     `;
-    bind();
+    bindStep1();
   }
 
-  function bind() {
-    root.querySelector('#close-btn').onclick = () => {
-      players.length = 0;
-      render();
-    };
-
+  function bindStep1() {
     root.querySelector('#add-form').onsubmit = e => {
       e.preventDefault();
       const input = root.querySelector('#new-name');
       const name = input.value.trim();
-      if (!name) return;
-      if (players.length >= MAX_PLAYERS) {
-        alert(`Max ${MAX_PLAYERS} players for single-court v1.`);
-        return;
-      }
-      players.push({ id: genId(), name, seedSkill: 3 });
+      if (!name || players.length >= MAX_PLAYERS) return;
+      players.push({ id: genId(), name, seedSkill: 2 });
       input.value = '';
       render();
       root.querySelector('#new-name').focus();
@@ -90,25 +96,21 @@ export function renderSetup(root, go) {
 
     root.querySelectorAll('.player-name').forEach(inp => {
       inp.oninput = e => {
-        const i = +e.target.dataset.idx;
-        players[i].name = e.target.value;
+        players[+e.target.dataset.idx].name = e.target.value;
       };
     });
 
     root.querySelectorAll('.skill-dots').forEach(dots => {
       dots.onclick = e => {
         if (!e.target.classList.contains('dot')) return;
-        const i = +dots.dataset.idx;
-        const skill = +e.target.dataset.skill;
-        players[i].seedSkill = skill;
+        players[+dots.dataset.idx].seedSkill = +e.target.dataset.skill;
         render();
       };
     });
 
     root.querySelectorAll('.remove-btn').forEach(btn => {
       btn.onclick = () => {
-        const i = +btn.dataset.idx;
-        players.splice(i, 1);
+        players.splice(+btn.dataset.idx, 1);
         render();
       };
     });
@@ -117,32 +119,63 @@ export function renderSetup(root, go) {
     if (reuseBtn) {
       reuseBtn.onclick = () => {
         for (const p of lastRoster) {
-          players.push({ id: genId(), name: p.name, seedSkill: p.seedSkill });
+          if (players.length < MAX_PLAYERS) {
+            players.push({ id: genId(), name: p.name, seedSkill: Math.min(p.seedSkill, 3) });
+          }
         }
         render();
       };
     }
 
-    root.querySelector('#rounds-down').onclick = () => {
-      if (targetRounds > MIN_ROUNDS) targetRounds--;
+    root.querySelector('#next-btn').onclick = () => {
+      if (players.length < MIN_PLAYERS) return;
+      step = 2;
       render();
     };
-    root.querySelector('#rounds-up').onclick = () => {
-      if (targetRounds < MAX_ROUNDS) targetRounds++;
+  }
+
+  function renderStep2() {
+    root.innerHTML = `
+      ${stepIndicator()}
+
+      <div class="screen-header">
+        <div class="title">Ready?</div>
+        <button class="icon-btn" id="back-btn" style="font-size:14px;">← Back</button>
+      </div>
+
+      <div class="label">Players · ${players.length}</div>
+      <div class="card">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">
+          ${players.map(p => `
+            <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:5px 10px;font-size:13px;">
+              ${escapeHtml(p.name)}
+              <span class="skill-dots" style="pointer-events:none;">${skillDots(p.seedSkill)}</span>
+            </span>
+          `).join('')}
+        </div>
+      </div>
+
+      <button class="btn" id="start-btn" style="margin-top:18px;">Start session</button>
+    `;
+    bindStep2();
+  }
+
+  function bindStep2() {
+    root.querySelector('#back-btn').onclick = () => {
+      step = 1;
       render();
     };
 
     root.querySelector('#start-btn').onclick = () => {
-      if (players.length < MIN_PLAYERS) return;
       saveLastRoster(players);
-      const session = createSession({ players: [...players], targetRounds });
+      const session = createSession({ players: [...players] });
       saveSession(session);
       go('live', session);
     };
   }
 
   function escapeHtml(s) {
-    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
   render();
