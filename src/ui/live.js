@@ -372,9 +372,11 @@ export function renderLive(root, go, session) {
     if (saveEditBtn) {
       saveEditBtn.onclick = () => {
         const i = editingRoundIdx;
-        state.schedule[i] = { ...state.schedule[i], teamA: [...editTeamA], teamB: [...editTeamB] };
+        const patchedSchedule = state.schedule.map((r, j) =>
+          j === i ? { ...r, teamA: [...editTeamA], teamB: [...editTeamB], manuallyEdited: true } : r
+        );
         const rng = createRng((state.seed + i + 5000) >>> 0);
-        const reopt = reoptimizeFrom(state, i + 1, state.weights, rng);
+        const reopt = reoptimizeFrom({ ...state, schedule: patchedSchedule }, i + 1, state.weights, rng);
         state = { ...state, schedule: reopt };
         persist();
         editingRoundIdx = null;
