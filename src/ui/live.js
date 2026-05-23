@@ -142,6 +142,7 @@ export function renderLive(root, go, session) {
           <button id="m-add">Add player</button>
           <button id="m-remove">Remove player</button>
           <button id="m-skip">Skip current round</button>
+          <button id="m-settings">Fairness settings</button>
           <button id="m-end">End session early</button>
           <button id="m-cancel" style="color:var(--text-secondary)">Close</button>
         </div>
@@ -237,6 +238,10 @@ export function renderLive(root, go, session) {
         persist();
         menuOpen = false;
         render();
+      };
+      root.querySelector('#m-settings').onclick = () => {
+        menuOpen = false;
+        go('settings', state);
       };
       root.querySelector('#m-end').onclick = () => {
         if (!confirm('End the session now and view summary?')) return;
