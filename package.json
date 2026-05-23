@@ -1,0 +1,13 @@
+{
+  "name": "court-shuffle",
+  "version": "0.1.0",
+  "description": "Tennis session shuffler — single-court, organizer-only PWA",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/",
+    "serve": "python3 -m http.server 8000"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
