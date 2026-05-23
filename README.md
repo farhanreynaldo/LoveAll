@@ -20,7 +20,3 @@ npm test
 
 Any static host: GitHub Pages, Cloudflare Pages, Vercel, Netlify, or copy the folder to any web server. No build step.
 
-## Specs
-
-- Algorithm: `docs/superpowers/specs/2026-05-23-court-shuffle-algorithm-design.md`
-- UI/UX: `docs/superpowers/specs/2026-05-23-court-shuffle-ui-design.md`
