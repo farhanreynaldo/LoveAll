@@ -9,6 +9,11 @@ export function renderLive(root, go, session) {
   let scoreDraft = [0, 0];
   let scheduleExpanded = false;
   let menuOpen = false;
+  let editingRoundIdx = null;  // index of round currently being edited, or null
+  let editTeamA = [];          // local copies during edit
+  let editTeamB = [];
+  let editResting = [];
+  let selectedChip = null;     // { zone: 'A'|'B'|'R', index: number } of selected chip
 
   function currentRoundIndex() {
     return state.schedule.findIndex(r => r.status !== 'completed' && r.status !== 'skipped');
@@ -78,18 +83,55 @@ export function renderLive(root, go, session) {
       </div>
       ${scheduleExpanded ? `
         <div class="card schedule-list">
-          ${state.schedule.map((r, i) => `
-            <div class="schedule-item ${r.status} ${r.manuallyEdited ? 'edited' : ''}" data-round-idx="${i}">
-              <span>R${i+1} · ${escapeHtml(r.teamA.map(playerName).join(', '))} vs ${escapeHtml(r.teamB.map(playerName).join(', '))}</span>
-              <span>${r.score ? `${r.score[0]}–${r.score[1]}` : ''}</span>
-            </div>
-          `).join('')}
+          ${state.schedule.map((r, i) => {
+            if (editingRoundIdx === i) return editorHtml(i);
+            return `
+              <div class="schedule-item ${r.status} ${r.manuallyEdited ? 'edited' : ''}" data-round-idx="${i}">
+                <span>R${i+1} · ${escapeHtml(r.teamA.map(playerName).join(', '))} vs ${escapeHtml(r.teamB.map(playerName).join(', '))}</span>
+                <span>${r.score ? `${r.score[0]}–${r.score[1]}` : ''}</span>
+              </div>
+            `;
+          }).join('')}
         </div>
       ` : ''}
 
       ${menuOpen ? menuHtml() : ''}
     `;
     bind();
+  }
+
+  function editorHtml(i) {
+    const chip = (id, zone, idx) => {
+      const isSelected = selectedChip && selectedChip.zone === zone && selectedChip.index === idx;
+      return `<button class="player-chip ${isSelected ? 'selected' : ''}" data-zone="${zone}" data-chip-idx="${idx}">${escapeHtml(playerName(id))}</button>`;
+    };
+    return `
+      <div class="schedule-item-editor" data-round-idx="${i}">
+        <div class="editor-label">Round ${i + 1} · tap a player, then tap another to swap</div>
+        <div class="editor-section">
+          <div class="editor-section-label">Team A</div>
+          <div class="chip-row">
+            ${editTeamA.map((id, idx) => chip(id, 'A', idx)).join('')}
+          </div>
+        </div>
+        <div class="editor-section">
+          <div class="editor-section-label">Team B</div>
+          <div class="chip-row">
+            ${editTeamB.map((id, idx) => chip(id, 'B', idx)).join('')}
+          </div>
+        </div>
+        <div class="editor-section">
+          <div class="editor-section-label">Resting</div>
+          <div class="chip-row">
+            ${editResting.map((id, idx) => chip(id, 'R', idx)).join('')}
+          </div>
+        </div>
+        <div class="editor-actions">
+          <button class="btn small ghost" id="editor-cancel">Cancel</button>
+          <button class="btn small" id="editor-save">Save</button>
+        </div>
+      </div>
+    `;
   }
 
   function menuHtml() {
@@ -235,29 +277,58 @@ export function renderLive(root, go, session) {
         el.onclick = () => {
           const i = +el.dataset.roundIdx;
           const r = state.schedule[i];
-          const allIds = state.players.map(p => p.id);
+          editingRoundIdx = i;
+          editTeamA = [...r.teamA];
+          editTeamB = [...r.teamB];
           const onCourt = [...r.teamA, ...r.teamB];
-          const resting = allIds.filter(id => !onCourt.includes(id));
-          const display = (id) => `${state.players.find(p => p.id === id)?.name} (${id})`;
-          const input = prompt(
-            `Round ${i + 1} edit. Current:\nTeam A: ${r.teamA.map(display).join(', ')}\nTeam B: ${r.teamB.map(display).join(', ')}\nResting: ${resting.map(display).join(', ')}\n\nEnter new lineup as: A-id1,A-id2 / B-id1,B-id2`,
-            `${r.teamA.join(',')} / ${r.teamB.join(',')}`
-          );
-          if (!input) return;
-          const m = input.match(/^\s*([^,/]+)\s*,\s*([^,/]+)\s*\/\s*([^,/]+)\s*,\s*([^,/]+)\s*$/);
-          if (!m) { alert('Format: id,id / id,id'); return; }
-          const newA = [m[1].trim(), m[2].trim()];
-          const newB = [m[3].trim(), m[4].trim()];
-          const all = [...newA, ...newB];
-          if (new Set(all).size !== 4) { alert('Need 4 distinct players.'); return; }
-          if (!all.every(id => allIds.includes(id))) { alert('Unknown player id.'); return; }
-          state.schedule[i].teamA = newA;
-          state.schedule[i].teamB = newB;
-          state.schedule[i].manuallyEdited = true;
-          persist();
+          editResting = state.players.map(p => p.id).filter(id => !onCourt.includes(id));
+          selectedChip = null;
           render();
         };
       });
+
+      if (editingRoundIdx !== null) {
+        root.querySelectorAll('.player-chip').forEach(chipEl => {
+          chipEl.onclick = () => {
+            const zone = chipEl.dataset.zone;
+            const idx = +chipEl.dataset.chipIdx;
+            if (selectedChip && selectedChip.zone === zone && selectedChip.index === idx) {
+              selectedChip = null;
+            } else if (selectedChip) {
+              // swap selectedChip with the just-tapped chip
+              const zones = { A: editTeamA, B: editTeamB, R: editResting };
+              const src = zones[selectedChip.zone];
+              const dst = zones[zone];
+              const tmp = src[selectedChip.index];
+              src[selectedChip.index] = dst[idx];
+              dst[idx] = tmp;
+              selectedChip = null;
+            } else {
+              selectedChip = { zone, index: idx };
+            }
+            render();
+          };
+        });
+
+        const cancelBtn = root.querySelector('#editor-cancel');
+        if (cancelBtn) cancelBtn.onclick = () => {
+          editingRoundIdx = null;
+          selectedChip = null;
+          render();
+        };
+
+        const saveBtn = root.querySelector('#editor-save');
+        if (saveBtn) saveBtn.onclick = () => {
+          const i = editingRoundIdx;
+          state.schedule[i].teamA = [...editTeamA];
+          state.schedule[i].teamB = [...editTeamB];
+          state.schedule[i].manuallyEdited = true;
+          editingRoundIdx = null;
+          selectedChip = null;
+          persist();
+          render();
+        };
+      }
     }
   }
 

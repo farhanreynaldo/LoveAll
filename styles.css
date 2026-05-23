@@ -267,3 +267,51 @@ input[type="text"], input[type="number"] {
 .leader-row .rank { color: var(--text-secondary); width: 18px; font-variant-numeric: tabular-nums; }
 .leader-row .name { flex: 1; margin-left: 8px; }
 .leader-row .stat { font-variant-numeric: tabular-nums; }
+
+.schedule-item-editor {
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg);
+}
+.editor-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+.editor-section { margin-bottom: 10px; }
+.editor-section-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.player-chip {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.player-chip.selected {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.editor-actions .btn {
+  flex: 1;
+}
