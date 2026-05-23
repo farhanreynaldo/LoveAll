@@ -217,6 +217,34 @@ export function renderLive(root, go, session) {
           render();
         };
       });
+
+      root.querySelectorAll('.schedule-item.tentative').forEach(el => {
+        el.onclick = () => {
+          const i = +el.dataset.roundIdx;
+          const r = state.schedule[i];
+          const allIds = state.players.map(p => p.id);
+          const onCourt = [...r.teamA, ...r.teamB];
+          const resting = allIds.filter(id => !onCourt.includes(id));
+          const display = (id) => `${state.players.find(p => p.id === id)?.name} (${id})`;
+          const input = prompt(
+            `Round ${i + 1} edit. Current:\nTeam A: ${r.teamA.map(display).join(', ')}\nTeam B: ${r.teamB.map(display).join(', ')}\nResting: ${resting.map(display).join(', ')}\n\nEnter new lineup as: A-id1,A-id2 / B-id1,B-id2`,
+            `${r.teamA.join(',')} / ${r.teamB.join(',')}`
+          );
+          if (!input) return;
+          const m = input.match(/^\s*([^,/]+)\s*,\s*([^,/]+)\s*\/\s*([^,/]+)\s*,\s*([^,/]+)\s*$/);
+          if (!m) { alert('Format: id,id / id,id'); return; }
+          const newA = [m[1].trim(), m[2].trim()];
+          const newB = [m[3].trim(), m[4].trim()];
+          const all = [...newA, ...newB];
+          if (new Set(all).size !== 4) { alert('Need 4 distinct players.'); return; }
+          if (!all.every(id => allIds.includes(id))) { alert('Unknown player id.'); return; }
+          state.schedule[i].teamA = newA;
+          state.schedule[i].teamB = newB;
+          state.schedule[i].manuallyEdited = true;
+          persist();
+          render();
+        };
+      });
     }
   }
 
