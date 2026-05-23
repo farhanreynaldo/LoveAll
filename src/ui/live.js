@@ -11,7 +11,7 @@ export function renderLive(root, go, session) {
   let menuOpen = false;
 
   function currentRoundIndex() {
-    return state.schedule.findIndex(r => r.status !== 'completed');
+    return state.schedule.findIndex(r => r.status !== 'completed' && r.status !== 'skipped');
   }
 
   function playerName(id) {
@@ -99,6 +99,7 @@ export function renderLive(root, go, session) {
           <button id="m-dark">Toggle dark mode</button>
           <button id="m-add">Add player</button>
           <button id="m-remove">Remove player</button>
+          <button id="m-skip">Skip current round</button>
           <button id="m-end">End session early</button>
           <button id="m-cancel" style="color:var(--text-secondary)">Close</button>
         </div>
@@ -179,6 +180,18 @@ export function renderLive(root, go, session) {
         const rng = createRng((state.seed + 2000) >>> 0);
         const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
         state = { ...state, schedule: reopt };
+        persist();
+        menuOpen = false;
+        render();
+      };
+      root.querySelector('#m-skip').onclick = () => {
+        if (!confirm('Skip this round? It will not count toward stats.')) {
+          menuOpen = false; render(); return;
+        }
+        const idx = currentRoundIndex();
+        state.schedule[idx].status = 'skipped';
+        state.schedule[idx].score = null;
+        scoreDraft = [0, 0];
         persist();
         menuOpen = false;
         render();

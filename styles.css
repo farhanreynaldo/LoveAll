@@ -203,6 +203,8 @@ input[type="text"], input[type="number"] {
   color: var(--text);
 }
 .schedule-item.completed { opacity: 0.45; }
+.schedule-item.skipped { opacity: 0.45; }
+.schedule-item.skipped::after { content: ' (skipped)'; color: var(--text-secondary); font-size: 11px; }
 .schedule-item.locked { font-weight: 600; }
 .schedule-item.edited::after { content: ' ✎'; color: var(--text-secondary); }
 
