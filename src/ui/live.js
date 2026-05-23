@@ -267,8 +267,8 @@ export function renderLive(root, go, session) {
         const name = prompt('New player name?');
         if (!name || !name.trim()) { menuOpen = false; render(); return; }
         if (state.players.length >= 12) { alert('Max 12 players.'); menuOpen = false; render(); return; }
-        const skillStr = prompt('Seed skill 1–5?', '3');
-        const skill = Math.max(1, Math.min(5, parseInt(skillStr, 10) || 3));
+        const skillStr = prompt('Seed skill: 1 (Low), 2 (Mid), 3 (High)?', '2');
+        const skill = Math.max(1, Math.min(3, parseInt(skillStr, 10) || 2));
         const id = `p${Date.now()}`;
         state = addPlayer(state, { id, name: name.trim(), seedSkill: skill });
         const idx = currentRoundIndex();
