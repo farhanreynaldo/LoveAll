@@ -78,3 +78,9 @@ test('removePlayer drops them from state and all counts', () => {
   assert.equal(next.elo.f, undefined);
   assert.equal(next.partnerCounts.a.f, undefined);
 });
+
+test('createSession defaults to 30 rounds when targetRounds is omitted', () => {
+  const s = createSession({ players: PLAYERS, seed: 1 });
+  assert.equal(s.schedule.length, 30);
+  for (const r of s.schedule) assert.equal(r.status, 'tentative');
+});

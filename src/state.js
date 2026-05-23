@@ -18,7 +18,7 @@ function blankPerPlayer(playerIds, value) {
   return out;
 }
 
-export function createSession({ players, targetRounds, seed = Date.now() >>> 0, weights = DEFAULT_WEIGHTS, k = 32 }) {
+export function createSession({ players, targetRounds = 30, seed = Date.now() >>> 0, weights = DEFAULT_WEIGHTS, k = 32 }) {
   const ids = players.map(p => p.id);
   const state = {
     players,
