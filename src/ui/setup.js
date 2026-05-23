@@ -25,9 +25,9 @@ export function renderSetup(root, go) {
       </div>`;
   }
 
-  function skillDots(current) {
+  function skillDots(current, interactive = false) {
     return [1, 2, 3].map(n =>
-      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}" style="cursor:pointer;"></span>`
+      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}" style="padding:15px 0;box-sizing:content-box;"></span>`
     ).join('');
   }
 
@@ -61,9 +61,9 @@ export function renderSetup(root, go) {
               <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}"
                 style="border:none;background:transparent;flex:1;padding:0;font-size:15px;" />
               <span style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-right:6px;">Skill</span>
-              <div class="skill-dots" data-idx="${i}">${skillDots(p.seedSkill)}</div>
+              <div class="skill-dots" data-idx="${i}" style="cursor:pointer;display:flex;align-items:center;">${skillDots(p.seedSkill)}</div>
               <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove"
-                style="font-size:16px;color:var(--text-secondary);">×</button>
+                style="font-size:16px;color:var(--text-secondary);min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">×</button>
             </div>
           `).join('')}
         </div>
@@ -120,7 +120,8 @@ export function renderSetup(root, go) {
       reuseBtn.onclick = () => {
         for (const p of lastRoster) {
           if (players.length < MAX_PLAYERS) {
-            players.push({ id: genId(), name: p.name, seedSkill: Math.min(p.seedSkill, 3) });
+            const skillRemap = { 1: 1, 2: 1, 3: 2, 4: 3, 5: 3 };
+            players.push({ id: genId(), name: p.name, seedSkill: skillRemap[p.seedSkill] ?? 2 });
           }
         }
         render();
