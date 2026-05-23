@@ -97,6 +97,8 @@ export function renderLive(root, go, session) {
       <div class="menu-sheet" id="menu-sheet">
         <div class="menu">
           <button id="m-dark">Toggle dark mode</button>
+          <button id="m-add">Add player</button>
+          <button id="m-remove">Remove player</button>
           <button id="m-end">End session early</button>
           <button id="m-cancel" style="color:var(--text-secondary)">Close</button>
         </div>
@@ -145,6 +147,39 @@ export function renderLive(root, go, session) {
       };
       root.querySelector('#m-dark').onclick = () => {
         toggleDarkMode();
+        menuOpen = false;
+        render();
+      };
+      root.querySelector('#m-add').onclick = () => {
+        const name = prompt('New player name?');
+        if (!name || !name.trim()) { menuOpen = false; render(); return; }
+        if (state.players.length >= 8) { alert('Max 8 players.'); menuOpen = false; render(); return; }
+        const skillStr = prompt('Seed skill 1–5?', '3');
+        const skill = Math.max(1, Math.min(5, parseInt(skillStr, 10) || 3));
+        const id = `p${Date.now()}`;
+        state = addPlayer(state, { id, name: name.trim(), seedSkill: skill });
+        const idx = currentRoundIndex();
+        const rng = createRng((state.seed + 1000) >>> 0);
+        const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
+        state = { ...state, schedule: reopt };
+        persist();
+        menuOpen = false;
+        render();
+      };
+      root.querySelector('#m-remove').onclick = () => {
+        const names = state.players.map(p => `${p.name} (${p.id})`).join('\n');
+        const id = prompt(`Remove which player?\nEnter the id in parens:\n${names}`);
+        if (!id || !state.players.find(p => p.id === id.trim())) {
+          menuOpen = false; render(); return;
+        }
+        if (state.players.length <= 6) { alert('Need at least 6 players.'); menuOpen = false; render(); return; }
+        if (!confirm(`Remove ${id}?`)) { menuOpen = false; render(); return; }
+        state = removePlayer(state, id.trim());
+        const idx = currentRoundIndex();
+        const rng = createRng((state.seed + 2000) >>> 0);
+        const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
+        state = { ...state, schedule: reopt };
+        persist();
         menuOpen = false;
         render();
       };
