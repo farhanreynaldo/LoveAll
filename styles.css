@@ -570,12 +570,6 @@ input[type="text"], input[type="number"] {
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
-  border-radius: 50%;
-}
-.roll-row.is-leader .roll-rank {
-  border: 1px solid var(--text);
-  color: var(--text);
-  font-weight: 500;
 }
 .roll-body {
   flex: 1;
@@ -589,6 +583,13 @@ input[type="text"], input[type="number"] {
   font-weight: 500;
   color: var(--text);
   line-height: 1.2;
+}
+.roll-row.is-leader {
+  background: var(--border);
+  border-bottom: none;
+  border-radius: 8px;
+  padding: 16px 12px;
+  margin: 4px -8px;
 }
 .roll-row.is-leader .roll-name { font-weight: 600; }
 .roll-meta {
