@@ -363,8 +363,13 @@ input[type="text"], input[type="number"] {
   height: 15px;
   color: var(--text);
 }
-.schedule-item.completed > span { opacity: 0.55; }
-.schedule-item.skipped > span { opacity: 0.45; }
+.schedule-item.completed,
+.schedule-item.skipped {
+  padding: 8px 4px;
+  font-size: 12px;
+}
+.schedule-item.completed > span { opacity: 0.4; }
+.schedule-item.skipped > span { opacity: 0.35; }
 .schedule-item.locked { font-weight: 600; }
 .schedule-item.edited > span::after { content: ' ✎'; color: var(--text-secondary); margin-left: 4px; }
 

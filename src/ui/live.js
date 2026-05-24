@@ -20,6 +20,7 @@ export function renderLive(root, go, session) {
   let selectedChip = null;     // { zone: 'A'|'B'|'R', index: number } of selected chip
   let editingScoreIdx = null;  // index of completed round whose score is being edited
   let editScoreDraft = [0, 0];
+  let lastAnchoredRoundIdx = null;  // tracks which round we last scrolled to; null on first mount
 
   function currentRoundIndex() {
     return state.schedule.findIndex(r => r.status !== 'completed' && r.status !== 'skipped');
@@ -162,6 +163,22 @@ export function renderLive(root, go, session) {
       ${menuOpen ? menuHtml() : ''}
     `;
     bind();
+    anchorCurrentRound(idx);
+  }
+
+  // Bring the active round into view, but only when it actually changed
+  // (so typing into the score input doesn't repeatedly trigger scroll).
+  // `block: 'nearest'` is a no-op when the row is already visible, so we
+  // never yank the page away from Now Playing unnecessarily.
+  function anchorCurrentRound(idx) {
+    if (idx < 0) { lastAnchoredRoundIdx = idx; return; }
+    const changed = lastAnchoredRoundIdx !== null && lastAnchoredRoundIdx !== idx;
+    lastAnchoredRoundIdx = idx;
+    if (!changed) return;
+    const row = root.querySelector(`.schedule-item.is-current[data-round-idx="${idx}"]`);
+    if (!row) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    row.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
   }
 
   function scheduleRowHtml(r, realIdx, isCurrent) {
