@@ -1,4 +1,4 @@
-# Court Shuffle
+# LoveAll
 
 A tiny PWA for shuffling tennis doubles matches on a single court (6–8 players).
 Mobile-first, organizer-only, no backend.

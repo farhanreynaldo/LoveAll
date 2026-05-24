@@ -1,5 +1,24 @@
-const KEY = 'court-shuffle:session';
-const DARK_KEY = 'court-shuffle:dark';
+const KEY = 'loveall:session';
+const DARK_KEY = 'loveall:dark';
+
+// One-time rename from the old "court-shuffle:*" namespace. Safe to leave in
+// indefinitely; it's a no-op once the old keys are gone.
+function migrateKey(oldKey, newKey) {
+  try {
+    if (localStorage.getItem(newKey) !== null) {
+      localStorage.removeItem(oldKey);
+      return;
+    }
+    const v = localStorage.getItem(oldKey);
+    if (v !== null) {
+      localStorage.setItem(newKey, v);
+      localStorage.removeItem(oldKey);
+    }
+  } catch (e) { /* localStorage unavailable; ignore */ }
+}
+migrateKey('court-shuffle:session', KEY);
+migrateKey('court-shuffle:dark', DARK_KEY);
+migrateKey('court-shuffle:lastRoster', 'loveall:lastRoster');
 
 export function saveSession(state) {
   try {
@@ -32,7 +51,7 @@ export function loadDarkMode() {
   return localStorage.getItem(DARK_KEY) === '1';
 }
 
-const ROSTER_KEY = 'court-shuffle:lastRoster';
+const ROSTER_KEY = 'loveall:lastRoster';
 
 export function saveLastRoster(players) {
   try {

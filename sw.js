@@ -1,5 +1,5 @@
-const VERSION = 'v3';
-const CACHE = `court-shuffle-${VERSION}`;
+const VERSION = 'v4';
+const CACHE = `loveall-${VERSION}`;
 const ASSETS = [
   './',
   './index.html',
