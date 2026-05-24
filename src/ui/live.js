@@ -80,12 +80,12 @@ export function renderLive(root, go, session) {
       </div>
 
       <div class="label">Now playing</div>
-      <div class="card">
-        <div class="row" style="padding:10px 4px;">
+      <div class="card card-hero">
+        <div class="row">
           <span style="font-size:15px;font-weight:500;">${escapeHtml(round.teamA.map(playerName).join(' · '))}</span>
         </div>
-        <div style="padding:2px 4px;color:var(--text-secondary);font-size:13px;">vs</div>
-        <div class="row" style="padding:10px 4px;border-bottom:none;">
+        <div class="match-vs">vs</div>
+        <div class="row">
           <span style="font-size:15px;font-weight:500;">${escapeHtml(round.teamB.map(playerName).join(' · '))}</span>
         </div>
       </div>
@@ -123,14 +123,21 @@ export function renderLive(root, go, session) {
         ${scoreDraft[0] + scoreDraft[1] === 0 ? 'disabled' : ''}>
         Save &amp; next round →
       </button>
+      <div class="inline-action-row">
+        <button class="text-link quiet" id="skip-round-link" type="button">
+          Skip this round
+        </button>
+      </div>
 
       ${fullList.length > 0 ? `
-        <div class="label" style="display:flex;justify-content:space-between;align-items:center;">
-          <span>Schedule</span>
-          <button class="btn ghost small schedule-toggle-btn" id="schedule-toggle" type="button">
-            ${scheduleExpanded ? 'Hide ▴' : 'Show all ▾'}
+        <div class="label">Schedule</div>
+        <p class="schedule-hint">
+          Tap any round to edit
+          <span class="schedule-hint-sep" aria-hidden="true">·</span>
+          <button class="text-link" id="schedule-toggle" type="button">
+            ${scheduleExpanded ? 'Collapse ▴' : 'Show all ▾'}
           </button>
-        </div>
+        </p>
         <div class="card" style="padding:4px 12px;" id="schedule-card">
           ${scheduleExpanded
             ? fullList.map((r, realIdx) => {
@@ -169,9 +176,16 @@ export function renderLive(root, go, session) {
     const scoreLabel = isCompleted && r.score ? ` · ${r.score[0]}:${r.score[1]}` : '';
     const skipLabel = isSkipped ? (r.skipReason ? ` (skipped: ${escapeHtml(r.skipReason)})` : ' (skipped)') : '';
     const editedClass = r.manuallyEdited ? ' edited' : '';
+    const showAffordance = isEditable && !isCurrent;
+    const chevronSvg = `<svg class="schedule-item-affordance" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-label="edit players" role="img"><path d="M9 6l6 6-6 6"/></svg>`;
+    const pencilSvg = `<svg class="schedule-item-affordance edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-label="edit score" role="img"><path d="M14.5 4.5l5 5"/><path d="M16 3l5 5-11 11H5v-5z"/></svg>`;
+    const affordanceGlyph = showAffordance
+      ? (isCompleted ? pencilSvg : chevronSvg)
+      : '';
     return `
-      <div class="schedule-item ${r.status}${editedClass}" data-round-idx="${realIdx}" data-action="${isCompleted ? 'edit-score' : (isPlanned ? 'edit-players' : '')}" style="cursor:${isEditable ? 'pointer' : 'default'};${isCurrent ? 'font-weight:600;' : ''}">
+      <div class="schedule-item ${r.status}${editedClass}${showAffordance ? ' editable' : ''}${isCurrent ? ' is-current' : ''}" data-round-idx="${realIdx}" data-action="${isCompleted ? 'edit-score' : (isPlanned ? 'edit-players' : '')}">
         <span>R${roundNum} ${tag}· ${teams}${scoreLabel}${skipLabel}</span>
+        ${affordanceGlyph}
       </div>
     `;
   }
@@ -494,6 +508,17 @@ export function renderLive(root, go, session) {
         menuView = 'main';
         addDraft = { name: '', skill: 2 };
         pendingRemoveId = null;
+        skipReason = '';
+        render();
+      };
+    }
+
+    // Inline skip-round entry point (opens the same skip sheet as the menu)
+    const skipLink = root.querySelector('#skip-round-link');
+    if (skipLink) {
+      skipLink.onclick = () => {
+        menuOpen = true;
+        menuView = 'skip';
         skipReason = '';
         render();
       };

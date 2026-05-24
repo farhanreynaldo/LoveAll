@@ -16,9 +16,9 @@ body.dark {
   --border: #2a3550;
   --border-soft: #1a2540;
   --text: #ffffff;
-  --text-secondary: #8a93a8;
-  --accent: #d4ff00;
-  --accent-text: #000000;
+  --text-secondary: #9c9892;
+  --accent: #f5f3ec;
+  --accent-text: #0a0e1a;
   --shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
@@ -97,6 +97,9 @@ html, body {
   padding: 12px;
   margin-bottom: 8px;
 }
+.card.card-hero {
+  padding: 16px;
+}
 
 .row {
   display: flex;
@@ -106,6 +109,17 @@ html, body {
   border-bottom: 1px solid var(--border-soft);
 }
 .row:last-child { border-bottom: none; }
+
+.match-vs {
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 4px 4px;
+}
+
+.card-hero .row {
+  padding: 4px 4px;
+  border-bottom: none;
+}
 
 .btn {
   background: var(--accent);
@@ -216,7 +230,7 @@ input[type="text"], input[type="number"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  padding: 6px 0;
 }
 .match-team .names { font-size: 15px; }
 .match-team .score {
@@ -269,26 +283,90 @@ input[type="text"], input[type="number"] {
   border-top: 1px solid var(--border);
 }
 
-.schedule-list .schedule-item {
-  padding: 8px 4px;
+.schedule-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  line-height: 1.35;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.label:has(+ .schedule-hint) {
+  margin-bottom: 4px;
+}
+.schedule-hint-sep {
+  color: var(--border);
+}
+.text-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border);
+  font-family: inherit;
+}
+.text-link:active {
+  text-decoration-color: var(--text);
+}
+.text-link.quiet {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.inline-action-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.schedule-item {
+  padding: 14px 4px;
   border-bottom: 1px solid var(--border-soft);
   font-size: 13px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+  cursor: default;
+  transition: background-color 220ms ease-out;
+}
+.schedule-item:last-child {
+  border-bottom: none;
+}
+.schedule-item.editable {
+  cursor: pointer;
+}
+.schedule-item.editable:active {
+  background: var(--border-soft);
+  transition: none;
+}
+.schedule-item.is-current {
+  font-weight: 600;
+}
+.schedule-item-affordance {
+  color: var(--text-secondary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.schedule-item-affordance.edit {
+  width: 15px;
+  height: 15px;
   color: var(--text);
 }
-.schedule-item.completed { opacity: 0.55; }
-.schedule-item.skipped { opacity: 0.45; }
+.schedule-item.completed > span { opacity: 0.55; }
+.schedule-item.skipped > span { opacity: 0.45; }
 .schedule-item.locked { font-weight: 600; }
-.schedule-item.edited::after { content: ' ✎'; color: var(--text-secondary); margin-left: 4px; }
-
-.schedule-toggle-btn {
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 12px;
-  padding: 6px 12px;
-  font-weight: 500;
-}
+.schedule-item.edited > span::after { content: ' ✎'; color: var(--text-secondary); margin-left: 4px; }
 
 .menu-sheet {
   position: fixed;

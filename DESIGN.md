@@ -14,9 +14,9 @@ colors:
   night-border: "oklch(30% 0.04 260)"
   night-border-soft: "oklch(22% 0.04 260)"
   night-text: "oklch(100% 0 0)"
-  night-text-quiet: "oklch(63% 0.02 250)"
-  court-lime: "oklch(93% 0.27 122)"
-  court-lime-ink: "oklch(0% 0 0)"
+  night-text-quiet: "oklch(63% 0.015 90)"
+  night-accent: "oklch(96% 0.01 90)"
+  night-accent-ink: "oklch(12% 0.02 260)"
   shadow-night: "oklch(0% 0 0 / 0.3)"
 typography:
   title:
@@ -129,13 +129,13 @@ components:
 
 A paper-warm light theme for daylight matches paired with a confident, deep-navy dark theme for evening play under floodlights. The system reads less like a piece of software and more like a Moleskine that happens to do the math — disciplined typography, no decorative weight, scores rendered with the same care a stopwatch gives the seconds. The product is a tool for an organizer mid-session; the visual system stays quiet so the social moment around it can stay loud.
 
-The light theme is built on a single warm off-white (`oklch(98% 0.003 95)`) tinted barely toward yellow so it never reads as clinical, with surfaces lifted one tonal step to pure white. Type and primary controls share a single ink color — the same near-black runs from headings to button fills — which gives the interface its monochromatic discipline. The dark theme is its peer, not an afterthought: a deep navy-black base for evening readability, with one electric **Court Lime** accent (`oklch(93% 0.27 122)`) that does the work the light theme's ink does. Every neutral is tinted toward its theme's hue family; no pure greys, no pure whites in either palette.
+The light theme is built on a single warm off-white (`oklch(98% 0.003 95)`) tinted barely toward yellow so it never reads as clinical, with surfaces lifted one tonal step to pure white. Type and primary controls share a single ink color — the same near-black runs from headings to button fills — which gives the interface its monochromatic discipline. The dark theme is its peer, not an afterthought: a deep navy-black base for evening readability, with a single **Night Accent** (`oklch(96% 0.01 90)`) — a warm off-white that mirrors the light theme's relationship of dark-ink-on-paper, inverted as paper-on-navy. The two themes are reflections of one another. Every neutral is tinted toward its theme's hue family; no pure greys, no pure whites in either palette.
 
 This system explicitly rejects four things, carried forward from PRODUCT.md: generic sports-app chrome (no turf green, no scoreboard look, no ball yellow used decoratively), enterprise SaaS gradients and identical card grids, playful gamification, and heavy marketing brand surfaces. The accent appears in dark mode only and is always functional, never decorative.
 
 **Key Characteristics:**
 - Mobile-first single column, 480px max width, system font stack only
-- Warm-neutral monochrome by default; one functional accent in dark theme
+- Warm-neutral monochrome in both themes; the accent is a tonal peer of the dark base, not a chroma event
 - Tabular numerals on every numeric surface (scores, stats, settings, leaderboards)
 - Generous radii (12px cards, 8px controls, 16px chips) softened further by circular steppers
 - Flat surfaces with hairline borders; shadows are ambient and rare
@@ -143,11 +143,11 @@ This system explicitly rejects four things, carried forward from PRODUCT.md: gen
 
 ## 2. Colors
 
-A two-theme palette built on tinted neutrals: warm paper for daylight, deep navy for floodlights. The single saturated color, Court Lime, exists only in the dark theme as the functional accent — its rarity is the point.
+A two-theme palette built on tinted neutrals: warm paper for daylight, deep navy for floodlights. There is no saturated color anywhere in the system. The dark theme's accent is a warm off-white that reads as quiet, monastic light against the navy base — the same role Ink plays against Paper Cream in the light theme, inverted.
 
 ### Primary
 - **Ink** (`oklch(20% 0.003 95)`, `#1a1a1a`): The single dark color in the light theme. Used as body text, headings, primary button fills, and chip selection. Faintly warm so it never reads as forensic black against the cream paper.
-- **Court Lime** (`oklch(93% 0.27 122)`, `#d4ff00`): The dark theme's voice. Used on primary button fills, selected chips, and active-state accents — always functional, never decorative. Its complement is pure black for legibility against the high-chroma yellow-green.
+- **Night Accent** (`oklch(96% 0.01 90)`, `#f5f3ec`): The dark theme's voice. Used on primary button fills, selected chips, and active-state accents — always functional, never decorative. Its complement is Night Navy (`#0a0e1a`) for legibility, so the button reads as warm paper carrying a navy mark. Maximally CVD-safe (no chroma to misread); zero category reflex (no sport, no fintech, no tech-blue).
 
 ### Neutral — Light Theme (Paper)
 - **Paper Cream** (`oklch(98% 0.003 95)`, `#fafaf7`): The base canvas. Warm off-white tinted toward yellow. Replaces what most apps would render as pure white.
@@ -162,15 +162,15 @@ A two-theme palette built on tinted neutrals: warm paper for daylight, deep navy
 - **Night Border** (`oklch(30% 0.04 260)`, `#2a3550`): Hairline borders. Same hue as the surface, two steps lighter.
 - **Night Border Soft** (`oklch(22% 0.04 260)`, `#1a2540`): Internal dividers.
 - **Night Text** (`oklch(100% 0 0)`, `#ffffff`): Primary text against navy. Pure white is acceptable here because the high-chroma navy base provides the tinting on its side of the contrast.
-- **Night Text Quiet** (`oklch(63% 0.02 250)`, `#8a93a8`): Secondary text. Cool grey matched to the navy hue.
+- **Night Text Quiet** (`oklch(63% 0.015 90)`, `#9c9892`): Secondary text. Warm grey, tuned to the same hue as the Night Accent. Holds a deliberate temperature tension against the cool navy base: the canvas is cool, the content sitting on it is warm. Like ink on parchment in a navy-bound notebook.
 
 ### Named Rules
 
-**The One Accent Rule.** Court Lime appears in dark theme only, and only as the fill for primary actions or the selected state of interactive elements. Never used as a decorative wash, never used as text on a neutral surface, never used to color borders, icons, or chrome. If the lime is on the screen, it is something the user can press or has just pressed.
+**The One Accent Rule.** Night Accent appears in dark theme only, and only as the fill for primary actions or the selected state of interactive elements. Never used as a decorative wash, never used as a text color on a neutral surface, never used to color borders, icons, or chrome. If the warm off-white is on the screen, it is something the user can press or has just pressed.
 
-**The Tinted Neutral Rule.** Pure greys are forbidden. Every neutral is tinted toward its theme's hue family — warm-yellow in light, cool-blue in dark. Pure `#000` and `#fff` appear only where contrast against an already-tinted base does the warming on the other side of the pair.
+**The Tinted Neutral Rule.** Pure greys are forbidden. Every neutral is tinted toward a hue family — warm-yellow throughout the light theme; cool-blue for the dark theme's base and structure, warm-yellow for the dark theme's content. Pure `#000` and `#fff` appear only where contrast against an already-tinted base does the warming on the other side of the pair (e.g., body text remains pure white because it sits against the navy base).
 
-**The Lime-Off-Light Rule.** Court Lime is never permitted in the light theme. The light theme's accent is Ink. Introducing the lime into paper-warm surroundings reads as sporty and breaks the notebook metaphor.
+**The Accent-Off-Light Rule.** Night Accent is never permitted in the light theme. The light theme's accent is Ink. The two themes share a structural relationship (warm off-white sits against a tinted dark base) but never share their accent — a paper-on-paper button would have no contrast, and an Ink-filled button in dark mode would lose its mass against the navy.
 
 ## 3. Typography
 
@@ -217,7 +217,7 @@ Components are flat, hairline-bordered, generous in radius, and operated by one 
 
 ### Buttons
 - **Shape:** Softly rounded rectangles (radius 8px). Full-width on primary actions.
-- **Primary:** Ink fill on Surface White text in light theme; Court Lime fill on black text in dark theme. Padding 14px all sides. Weight 600 label. Disabled state drops to 40% opacity, never grey.
+- **Primary:** Ink fill on Surface White text in light theme; Night Accent fill on Night Navy text in dark theme. Padding 14px all sides. Weight 600 label. Disabled state drops to 40% opacity, never grey.
 - **Ghost:** Surface White fill with hairline Taupe Border in light theme; Night Surface fill with Night Border in dark theme. Same padding and label weight as primary.
 - **Small:** Same color treatment as primary but tighter padding (6px / 12px) and 13px label. Used for inline secondary actions.
 - **Hover / Focus:** No transform. State changes are limited to background tint shifts and (on focus-visible) a 2px ring at 50% accent opacity. No transitions on layout properties.
@@ -238,7 +238,7 @@ Components are flat, hairline-bordered, generous in radius, and operated by one 
 
 ### Inputs
 - **Style:** Surface White (light) / Night Surface (dark) background. 1px Taupe / Night Border. Radius 8px. 10px padding. 14px text in Ink / Night Text.
-- **Focus:** Border shifts to Ink (light) / Court Lime (dark) at full opacity. No glow, no shadow, no border thickness change.
+- **Focus:** Border shifts to Ink (light) / Night Accent (dark) at full opacity. No glow, no shadow, no border thickness change.
 
 ### Stepper (numeric increment)
 - **Style:** Two 32×32 circular buttons (radius 50%) flanking a tabular-numeral value. Buttons are Surface White / Night Surface with hairline border; the central value is weight 600, 18px.
@@ -249,7 +249,7 @@ Components are flat, hairline-bordered, generous in radius, and operated by one 
 - **Constraint:** The skill scale is 3 dots (Low / Mid / High). Three buckets are enough granularity for a casual social roster and avoid the false precision of a 5- or 10-step scale. If a future use case needs more granularity, switch to a stepper rather than adding dots.
 
 ### Chips (player filter)
-- **Style:** Pill-radius (16px), 6px / 12px padding, 13px text. Surface White background with hairline border by default; Ink fill with Surface White text when selected (Court Lime fill in dark theme).
+- **Style:** Pill-radius (16px), 6px / 12px padding, 13px text. Surface White background with hairline border by default; Ink fill with Surface White text when selected (Night Accent fill with Night Navy text in dark theme).
 - **The single-tap commitment Rule.** Chip selection commits immediately; there is no separate "apply" button. Editing is inline.
 
 ### Bottom Sheet Menu
@@ -263,7 +263,7 @@ Components are flat, hairline-bordered, generous in radius, and operated by one 
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** use Court Lime (`oklch(93% 0.27 122)`) only in dark theme, and only as a functional fill for primary actions or selected state.
+- **Do** use Night Accent (`oklch(96% 0.01 90)`) only in dark theme, and only as a functional fill for primary actions or selected state.
 - **Do** render every numeric surface with `font-variant-numeric: tabular-nums` at weight 300 for scores and 400+ for inline values.
 - **Do** keep the primary canvas Paper Cream (`oklch(98% 0.003 95)`), never pure white.
 - **Do** convey state with tonal background tints, opacity changes, weight shifts, and glyph suffixes — color is never the sole carrier.
@@ -274,7 +274,7 @@ Components are flat, hairline-bordered, generous in radius, and operated by one 
 - **Do** quote PRODUCT.md's strategic principles when adding a new screen: courtside-first, glanceable-not-studied, notebook-not-app.
 
 ### Don't:
-- **Don't** introduce court green, ball yellow, or any color associated with the sport of tennis. Court Lime is a signal color tuned to a deep navy backdrop, not a sport reference.
+- **Don't** introduce court green, ball yellow, or any saturated color associated with the sport of tennis. The dark theme accent is a warm off-white, deliberately monochrome; it carries no sport reference.
 - **Don't** use enterprise-SaaS gradients, hero-metric templates with gradient accents, or identical card grids. PRODUCT.md rejects the SaaS dashboard look; the visual spec enforces it.
 - **Don't** use mascots, achievement badges, confetti, or reward animations. This is not a gamified app.
 - **Don't** use big marketing display type, scroll-driven hero sections, or splashy color washes. There is no marketing surface in this product.
