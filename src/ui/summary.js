@@ -31,7 +31,10 @@ export function renderSummary(root, go, session) {
   root.innerHTML = `
     <div class="screen-header">
       <div class="title">Session complete</div>
-      <button class="icon-btn" id="close-btn" aria-label="close">×</button>
+      <div class="header-actions">
+        <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+        <button class="icon-btn" id="close-btn" aria-label="close">×</button>
+      </div>
     </div>
 
     <div class="summary-hero">

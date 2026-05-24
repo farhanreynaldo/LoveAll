@@ -19,15 +19,15 @@ export function renderSetup(root, go) {
 
   function stepIndicator() {
     return `
-      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:20px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:${step === 1 ? 'var(--text)' : 'var(--border)'};display:inline-block;"></span>
-        <span style="width:8px;height:8px;border-radius:50%;background:${step === 2 ? 'var(--text)' : 'var(--border)'};display:inline-block;"></span>
+      <div class="step-dots" role="presentation" aria-hidden="true">
+        <span class="step-dot ${step === 1 ? 'active' : ''}"></span>
+        <span class="step-dot ${step === 2 ? 'active' : ''}"></span>
       </div>`;
   }
 
   function skillDots(current, interactive = false) {
     return [1, 2, 3].map(n =>
-      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}" style="padding:15px 0;box-sizing:content-box;"></span>`
+      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}"></span>`
     ).join('');
   }
 
@@ -40,7 +40,10 @@ export function renderSetup(root, go) {
 
       <div class="screen-header">
         <div class="title">Who's playing?</div>
-        <span style="font-size:12px;color:var(--text-secondary);">${players.length} of ${MIN_PLAYERS} min</span>
+        <div class="header-actions">
+          <span style="font-size:12px;color:var(--text-secondary);">${players.length} of ${MIN_PLAYERS} min</span>
+          <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+        </div>
       </div>
 
       <form id="add-form" style="display:flex;gap:6px;margin-bottom:12px;">
@@ -59,7 +62,7 @@ export function renderSetup(root, go) {
           ${players.map((p, i) => `
             <div class="row" data-idx="${i}">
               <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}"
-                style="border:none;background:transparent;flex:1;padding:0;font-size:15px;" />
+                style="border:none;background:transparent;flex:1;padding:0;font-size:16px;" />
               <span style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-right:6px;">Skill</span>
               <div class="skill-dots" data-idx="${i}" style="cursor:pointer;display:flex;align-items:center;">${skillDots(p.seedSkill)}</div>
               <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove"
@@ -141,7 +144,10 @@ export function renderSetup(root, go) {
 
       <div class="screen-header">
         <div class="title">Ready?</div>
-        <button class="icon-btn" id="back-btn" style="font-size:14px;">← Back</button>
+        <div class="header-actions">
+          <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+          <button class="icon-btn" id="back-btn" style="font-size:14px;">← Back</button>
+        </div>
       </div>
 
       <div class="label">Players · ${players.length}</div>

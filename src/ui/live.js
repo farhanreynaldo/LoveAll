@@ -2,18 +2,24 @@ import { applyScore, removePlayer, addPlayer, recomputeFromCompleted } from '../
 import { reoptimizeFrom } from '../scheduler.js';
 import { createRng } from '../rng.js';
 import { saveSession, clearSession } from '../persistence.js';
-import { toggleDarkMode } from '../theme.js';
 
 export function renderLive(root, go, session) {
   let state = session;
   let scoreDraft = [0, 0];
-  let scheduleExpanded = false;
+  let scheduleExpanded = true;
   let menuOpen = false;
+  let menuView = 'main';       // 'main' | 'add' | 'remove' | 'skip'
+  let addDraft = { name: '', skill: 2 };
+  let pendingRemoveId = null;  // player id awaiting confirm in remove view
+  let skipReason = '';
   let editingRoundIdx = null;  // index of round currently being edited, or null
   let editTeamA = [];          // local copies during edit
   let editTeamB = [];
   let editResting = [];
+  let editLocked = false;      // whether the editing round should be saved as locked
   let selectedChip = null;     // { zone: 'A'|'B'|'R', index: number } of selected chip
+  let editingScoreIdx = null;  // index of completed round whose score is being edited
+  let editScoreDraft = [0, 0];
 
   function currentRoundIndex() {
     return state.schedule.findIndex(r => r.status !== 'completed' && r.status !== 'skipped');
@@ -36,7 +42,10 @@ export function renderLive(root, go, session) {
       root.innerHTML = `
         <div class="screen-header">
           <div class="title">Session</div>
-          <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
+          <div class="header-actions">
+            <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+            <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
+          </div>
         </div>
         <div class="card" style="text-align:center;padding:24px;">
           <p style="color:var(--text-secondary);font-size:14px;">All scheduled rounds complete.</p>
@@ -56,15 +65,18 @@ export function renderLive(root, go, session) {
       .map(p => p.id)
       .filter(id => !round.teamA.includes(id) && !round.teamB.includes(id));
 
-    const upcoming = state.schedule
+    const upcomingPreview = state.schedule
       .slice(idx + 1)
-      .filter(r => r.status !== 'completed' && r.status !== 'skipped')
-      .slice(0, 5);
+      .find(r => r.status !== 'completed' && r.status !== 'skipped');
+    const fullList = state.schedule;
 
     root.innerHTML = `
       <div class="screen-header">
         <div class="title">Round ${idx + 1}</div>
-        <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
+        <div class="header-actions">
+          <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+          <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
+        </div>
       </div>
 
       <div class="label">Now playing</div>
@@ -90,28 +102,20 @@ export function renderLive(root, go, session) {
       <div class="label">Game done? Enter final score</div>
       <div class="card">
         <div class="match-team">
-          <div>
+          <div style="flex:1;min-width:0;">
             <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
               ${escapeHtml(round.teamA.map(playerName).join(' · '))}
             </div>
-            <div class="score">${scoreDraft[0]}</div>
           </div>
-        </div>
-        <div class="score-controls">
-          <button data-team="0" data-delta="-1">−</button>
-          <button data-team="0" data-delta="1">+</button>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input" data-team="0" value="${scoreDraft[0]}" />
         </div>
         <div class="match-team" style="border-top:1px solid var(--border-soft);margin-top:8px;">
-          <div>
+          <div style="flex:1;min-width:0;">
             <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
               ${escapeHtml(round.teamB.map(playerName).join(' · '))}
             </div>
-            <div class="score">${scoreDraft[1]}</div>
           </div>
-        </div>
-        <div class="score-controls">
-          <button data-team="1" data-delta="-1">−</button>
-          <button data-team="1" data-delta="1">+</button>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input" data-team="1" value="${scoreDraft[1]}" />
         </div>
       </div>
 
@@ -120,31 +124,30 @@ export function renderLive(root, go, session) {
         Save &amp; next round →
       </button>
 
-      ${upcoming.length > 0 ? `
-        <div class="label" id="schedule-toggle" style="cursor:pointer;display:flex;justify-content:space-between;">
-          <span>Upcoming rounds</span>
-          <span>${scheduleExpanded ? '▴' : '▾'}</span>
+      ${fullList.length > 0 ? `
+        <div class="label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Schedule</span>
+          <button class="btn ghost small schedule-toggle-btn" id="schedule-toggle" type="button">
+            ${scheduleExpanded ? 'Hide ▴' : 'Show all ▾'}
+          </button>
         </div>
         <div class="card" style="padding:4px 12px;" id="schedule-card">
           ${scheduleExpanded
-            ? upcoming.map((r, i) => {
-                const realIdx = state.schedule.indexOf(r);
-                const roundNum = realIdx + 1;
+            ? fullList.map((r, realIdx) => {
+                if (editingScoreIdx === realIdx) {
+                  return scoreEditorHtml(realIdx);
+                }
                 if (editingRoundIdx === realIdx) {
                   return editorHtml(realIdx);
                 }
-                return `
-                  <div class="schedule-item ${r.status}" data-round-idx="${realIdx}" style="cursor:${r.status === 'tentative' ? 'pointer' : 'default'};">
-                    <span>R${roundNum} · ${escapeHtml(r.teamA.map(playerName).join('/'))} vs ${escapeHtml(r.teamB.map(playerName).join('/'))}</span>
-                  </div>
-                `;
+                return scheduleRowHtml(r, realIdx, realIdx === idx);
               }).join('')
-            : (() => {
-                const realIdx0 = state.schedule.indexOf(upcoming[0]);
+            : (upcomingPreview ? (() => {
+                const realIdx0 = state.schedule.indexOf(upcomingPreview);
                 return `<div class="schedule-item" style="opacity:0.6;font-size:13px;">
-                  R${realIdx0 + 1} · ${escapeHtml(upcoming[0].teamA.map(playerName).join('/'))} vs ${escapeHtml(upcoming[0].teamB.map(playerName).join('/'))}
+                  R${realIdx0 + 1} · ${escapeHtml(upcomingPreview.teamA.map(playerName).join('/'))} vs ${escapeHtml(upcomingPreview.teamB.map(playerName).join('/'))}
                 </div>`;
-              })()
+              })() : `<div class="schedule-item" style="opacity:0.6;font-size:13px;">No upcoming rounds</div>`)
           }
         </div>
       ` : ''}
@@ -152,6 +155,46 @@ export function renderLive(root, go, session) {
       ${menuOpen ? menuHtml() : ''}
     `;
     bind();
+  }
+
+  function scheduleRowHtml(r, realIdx, isCurrent) {
+    const roundNum = realIdx + 1;
+    const teams = `${escapeHtml(r.teamA.map(playerName).join('/'))} vs ${escapeHtml(r.teamB.map(playerName).join('/'))}`;
+    const isCompleted = r.status === 'completed';
+    const isSkipped = r.status === 'skipped';
+    const isLocked = r.status === 'locked';
+    const isPlanned = r.status === 'tentative' || isLocked;
+    const isEditable = isCompleted || isPlanned;
+    const tag = isCurrent ? '· now ' : '';
+    const scoreLabel = isCompleted && r.score ? ` · ${r.score[0]}:${r.score[1]}` : '';
+    const skipLabel = isSkipped ? (r.skipReason ? ` (skipped: ${escapeHtml(r.skipReason)})` : ' (skipped)') : '';
+    const editedClass = r.manuallyEdited ? ' edited' : '';
+    return `
+      <div class="schedule-item ${r.status}${editedClass}" data-round-idx="${realIdx}" data-action="${isCompleted ? 'edit-score' : (isPlanned ? 'edit-players' : '')}" style="cursor:${isEditable ? 'pointer' : 'default'};${isCurrent ? 'font-weight:600;' : ''}">
+        <span>R${roundNum} ${tag}· ${teams}${scoreLabel}${skipLabel}</span>
+      </div>
+    `;
+  }
+
+  function scoreEditorHtml(i) {
+    const r = state.schedule[i];
+    return `
+      <div class="schedule-item-editor" data-round-idx="${i}">
+        <div class="editor-label">Round ${i + 1} · edit final score</div>
+        <div class="match-team">
+          <div style="flex:1;min-width:0;font-size:13px;">${escapeHtml(r.teamA.map(playerName).join(' · '))}</div>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="0" value="${editScoreDraft[0]}" />
+        </div>
+        <div class="match-team" style="border-top:1px solid var(--border-soft);margin-top:8px;">
+          <div style="flex:1;min-width:0;font-size:13px;">${escapeHtml(r.teamB.map(playerName).join(' · '))}</div>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="1" value="${editScoreDraft[1]}" />
+        </div>
+        <div class="editor-actions">
+          <button class="btn small ghost" id="score-edit-cancel">Cancel</button>
+          <button class="btn small" id="score-edit-save">Save</button>
+        </div>
+      </div>
+    `;
   }
 
   function editorHtml(i) {
@@ -180,6 +223,11 @@ export function renderLive(root, go, session) {
             ${editResting.map((id, idx) => chip(id, 'R', idx)).join('')}
           </div>
         </div>
+        <div class="editor-lock-row">
+          <button class="player-chip ${editLocked ? 'selected' : ''}" id="editor-lock" type="button">
+            ${editLocked ? 'Locked: re-optimize won\'t touch this round' : 'Lock this round'}
+          </button>
+        </div>
         <div class="editor-actions">
           <button class="btn small ghost" id="editor-cancel">Cancel</button>
           <button class="btn small" id="editor-save">Save</button>
@@ -189,29 +237,226 @@ export function renderLive(root, go, session) {
   }
 
   function menuHtml() {
+    let inner;
+    if (menuView === 'add') inner = addViewHtml();
+    else if (menuView === 'remove') inner = removeViewHtml();
+    else if (menuView === 'skip') inner = skipViewHtml();
+    else inner = mainMenuHtml();
+    return `<div class="menu-sheet" id="menu-sheet"><div class="menu">${inner}</div></div>`;
+  }
+
+  function mainMenuHtml() {
     return `
-      <div class="menu-sheet" id="menu-sheet">
-        <div class="menu">
-          <button id="end-session-btn">End session</button>
-          <button id="m-dark">Toggle dark mode</button>
-          <button id="m-add">Add player</button>
-          <button id="m-remove">Remove player</button>
-          <button id="m-skip">Skip current round</button>
-          <button id="m-settings">Fairness settings</button>
-          <button id="m-cancel" style="color:var(--text-secondary)">Close</button>
+      <button id="end-session-btn">End session</button>
+      <button id="m-add">Add player</button>
+      <button id="m-remove">Remove player</button>
+      <button id="m-skip">Skip current round</button>
+      <button id="m-settings">Fairness settings</button>
+      <button id="m-cancel" style="color:var(--text-secondary)">Close</button>
+    `;
+  }
+
+  function addViewHtml() {
+    const dots = [1,2,3].map(n =>
+      `<span class="dot ${addDraft.skill >= n ? 'filled' : ''}" data-add-skill="${n}"></span>`
+    ).join('');
+    const atMax = state.players.length >= 12;
+    return `
+      <div class="sheet-view">
+        <div class="sheet-header">
+          <button class="sheet-back" id="sheet-back" aria-label="back">←</button>
+          <div class="sheet-title">Add player</div>
+        </div>
+        ${atMax ? `<p class="sheet-hint">Roster is full (12 maximum).</p>` : ''}
+        <input type="text" id="add-name" placeholder="Player name" value="${escapeHtml(addDraft.name)}" autocomplete="off" ${atMax ? 'disabled' : ''} />
+        <div class="sheet-row">
+          <span class="sheet-row-label">Skill</span>
+          <div class="skill-dots" id="add-skill-dots" style="cursor:pointer;align-items:center;">${dots}</div>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn ghost small" id="add-cancel">Cancel</button>
+          <button class="btn small" id="add-save" ${atMax || !addDraft.name.trim() ? 'disabled' : ''}>Add</button>
         </div>
       </div>
     `;
   }
 
+  function removeViewHtml() {
+    const tooFew = state.players.length <= 4;
+    const pending = pendingRemoveId ? state.players.find(p => p.id === pendingRemoveId) : null;
+    return `
+      <div class="sheet-view">
+        <div class="sheet-header">
+          <button class="sheet-back" id="sheet-back" aria-label="back">←</button>
+          <div class="sheet-title">Remove player</div>
+        </div>
+        ${tooFew ? `<p class="sheet-hint">Need at least 4 players. Add someone first.</p>` : ''}
+        ${pending ? `
+          <p class="sheet-hint">Remove <strong>${escapeHtml(pending.name)}</strong>? Their stats will be dropped from this session.</p>
+          <div class="sheet-actions">
+            <button class="btn ghost small" id="remove-cancel">Cancel</button>
+            <button class="btn small" id="remove-confirm">Remove</button>
+          </div>
+        ` : `
+          <div class="chip-row" style="padding:4px 0;">
+            ${state.players.map(p =>
+              `<button class="player-chip" data-remove-id="${p.id}" ${tooFew ? 'disabled' : ''}>${escapeHtml(p.name)}</button>`
+            ).join('')}
+          </div>
+          <div class="sheet-actions">
+            <button class="btn ghost small" id="remove-back">Done</button>
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  function skipViewHtml() {
+    const idx = currentRoundIndex();
+    if (idx < 0) {
+      return `
+        <div class="sheet-view">
+          <div class="sheet-header">
+            <button class="sheet-back" id="sheet-back" aria-label="back">←</button>
+            <div class="sheet-title">Skip round</div>
+          </div>
+          <p class="sheet-hint">No active round to skip.</p>
+          <div class="sheet-actions">
+            <button class="btn ghost small" id="skip-cancel">Close</button>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="sheet-view">
+        <div class="sheet-header">
+          <button class="sheet-back" id="sheet-back" aria-label="back">←</button>
+          <div class="sheet-title">Skip round ${idx + 1}</div>
+        </div>
+        <p class="sheet-hint">Skipped rounds don't count toward stats. A short reason helps you remember later.</p>
+        <input type="text" id="skip-reason" placeholder="Reason (optional)" value="${escapeHtml(skipReason)}" autocomplete="off" />
+        <div class="sheet-actions">
+          <button class="btn ghost small" id="skip-cancel">Cancel</button>
+          <button class="btn small" id="skip-confirm">Skip round</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindMenu() {
+    const closeMenu = () => { menuOpen = false; menuView = 'main'; pendingRemoveId = null; render(); };
+
+    root.querySelector('#menu-sheet').onclick = e => {
+      if (e.target.id === 'menu-sheet') closeMenu();
+    };
+    const back = root.querySelector('#sheet-back');
+    if (back) back.onclick = () => { menuView = 'main'; pendingRemoveId = null; render(); };
+
+    if (menuView === 'main') {
+      const endBtn = root.querySelector('#end-session-btn');
+      if (endBtn) endBtn.onclick = () => { menuOpen = false; go('summary', state); };
+      root.querySelector('#m-cancel').onclick = closeMenu;
+      root.querySelector('#m-add').onclick = () => { menuView = 'add'; render(); };
+      root.querySelector('#m-remove').onclick = () => { menuView = 'remove'; render(); };
+      root.querySelector('#m-skip').onclick = () => { menuView = 'skip'; render(); };
+      root.querySelector('#m-settings').onclick = () => { menuOpen = false; go('settings', state); };
+      return;
+    }
+
+    if (menuView === 'add') {
+      const nameInput = root.querySelector('#add-name');
+      if (nameInput) {
+        nameInput.oninput = e => {
+          addDraft.name = e.target.value;
+          const saveBtn = root.querySelector('#add-save');
+          if (saveBtn) saveBtn.disabled = !addDraft.name.trim() || state.players.length >= 12;
+        };
+      }
+      root.querySelectorAll('#add-skill-dots .dot').forEach(d => {
+        d.onclick = () => {
+          addDraft.skill = +d.dataset.addSkill;
+          render();
+          root.querySelector('#add-name')?.focus();
+        };
+      });
+      root.querySelector('#add-cancel').onclick = () => { menuView = 'main'; render(); };
+      const saveBtn = root.querySelector('#add-save');
+      if (saveBtn) {
+        saveBtn.onclick = () => {
+          const name = addDraft.name.trim();
+          if (!name || state.players.length >= 12) return;
+          const id = `p${Date.now()}`;
+          state = addPlayer(state, { id, name, seedSkill: addDraft.skill });
+          const idx = currentRoundIndex();
+          const rng = createRng((state.seed + 1000) >>> 0);
+          const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
+          state = { ...state, schedule: reopt };
+          persist();
+          closeMenu();
+        };
+      }
+      return;
+    }
+
+    if (menuView === 'remove') {
+      root.querySelectorAll('[data-remove-id]').forEach(btn => {
+        btn.onclick = () => {
+          pendingRemoveId = btn.dataset.removeId;
+          render();
+        };
+      });
+      const backBtn = root.querySelector('#remove-back');
+      if (backBtn) backBtn.onclick = () => { menuView = 'main'; render(); };
+      const cancelBtn = root.querySelector('#remove-cancel');
+      if (cancelBtn) cancelBtn.onclick = () => { pendingRemoveId = null; render(); };
+      const confirmBtn = root.querySelector('#remove-confirm');
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          if (!pendingRemoveId || state.players.length <= 4) return;
+          state = removePlayer(state, pendingRemoveId);
+          const idx = currentRoundIndex();
+          const rng = createRng((state.seed + 2000) >>> 0);
+          const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
+          state = { ...state, schedule: reopt };
+          persist();
+          closeMenu();
+        };
+      }
+      return;
+    }
+
+    if (menuView === 'skip') {
+      const reasonInput = root.querySelector('#skip-reason');
+      if (reasonInput) {
+        reasonInput.oninput = e => { skipReason = e.target.value; };
+      }
+      root.querySelector('#skip-cancel').onclick = () => { menuView = 'main'; render(); };
+      const confirmBtn = root.querySelector('#skip-confirm');
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          const idx = currentRoundIndex();
+          if (idx < 0) { closeMenu(); return; }
+          state.schedule[idx].status = 'skipped';
+          state.schedule[idx].score = null;
+          state.schedule[idx].skipReason = skipReason.trim() || null;
+          scoreDraft = [0, 0];
+          persist();
+          closeMenu();
+        };
+      }
+      return;
+    }
+  }
+
   function bind() {
-    // Score controls
-    root.querySelectorAll('[data-delta]').forEach(btn => {
-      btn.onclick = () => {
-        const team = +btn.dataset.team;
-        const delta = +btn.dataset.delta;
-        scoreDraft[team] = Math.max(0, scoreDraft[team] + delta);
-        render();
+    // Score inputs (current round)
+    root.querySelectorAll('.score-input[data-team]:not(.edit-score-input)').forEach(inp => {
+      inp.oninput = e => {
+        const team = +e.target.dataset.team;
+        const v = parseInt(e.target.value, 10);
+        scoreDraft[team] = Number.isNaN(v) ? 0 : Math.max(0, v);
+        const saveBtn = root.querySelector('#save-btn');
+        if (saveBtn) saveBtn.disabled = scoreDraft[0] + scoreDraft[1] === 0;
       };
     });
 
@@ -244,89 +489,80 @@ export function renderLive(root, go, session) {
     // Menu open
     const menuBtn = root.querySelector('#menu-btn');
     if (menuBtn) {
-      menuBtn.onclick = () => { menuOpen = true; render(); };
-    }
-
-    // Menu interactions (when open)
-    if (menuOpen) {
-      // End session
-      const endBtn = root.querySelector('#end-session-btn');
-      if (endBtn) endBtn.onclick = () => { menuOpen = false; go('summary', state); };
-
-      root.querySelector('#menu-sheet').onclick = e => {
-        if (e.target.id === 'menu-sheet' || e.target.id === 'm-cancel') {
-          menuOpen = false; render();
-        }
-      };
-      root.querySelector('#m-dark').onclick = () => {
-        toggleDarkMode();
-        menuOpen = false;
+      menuBtn.onclick = () => {
+        menuOpen = true;
+        menuView = 'main';
+        addDraft = { name: '', skill: 2 };
+        pendingRemoveId = null;
+        skipReason = '';
         render();
-      };
-      root.querySelector('#m-add').onclick = () => {
-        const name = prompt('New player name?');
-        if (!name || !name.trim()) { menuOpen = false; render(); return; }
-        if (state.players.length >= 12) { alert('Max 12 players.'); menuOpen = false; render(); return; }
-        const skillStr = prompt('Seed skill: 1 (Low), 2 (Mid), 3 (High)?', '2');
-        const skill = Math.max(1, Math.min(3, parseInt(skillStr, 10) || 2));
-        const id = `p${Date.now()}`;
-        state = addPlayer(state, { id, name: name.trim(), seedSkill: skill });
-        const idx = currentRoundIndex();
-        const rng = createRng((state.seed + 1000) >>> 0);
-        const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
-        state = { ...state, schedule: reopt };
-        persist();
-        menuOpen = false;
-        render();
-      };
-      root.querySelector('#m-remove').onclick = () => {
-        const names = state.players.map(p => `${p.name} (${p.id})`).join('\n');
-        const id = prompt(`Remove which player?\nEnter the id in parens:\n${names}`);
-        if (!id || !state.players.find(p => p.id === id.trim())) {
-          menuOpen = false; render(); return;
-        }
-        if (state.players.length <= 4) { alert('Need at least 4 players.'); menuOpen = false; render(); return; }
-        if (!confirm(`Remove ${id}?`)) { menuOpen = false; render(); return; }
-        state = removePlayer(state, id.trim());
-        const idx = currentRoundIndex();
-        const rng = createRng((state.seed + 2000) >>> 0);
-        const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
-        state = { ...state, schedule: reopt };
-        persist();
-        menuOpen = false;
-        render();
-      };
-      root.querySelector('#m-skip').onclick = () => {
-        if (!confirm('Skip this round? It will not count toward stats.')) {
-          menuOpen = false; render(); return;
-        }
-        const idx = currentRoundIndex();
-        state.schedule[idx].status = 'skipped';
-        state.schedule[idx].score = null;
-        scoreDraft = [0, 0];
-        persist();
-        menuOpen = false;
-        render();
-      };
-      root.querySelector('#m-settings').onclick = () => {
-        menuOpen = false;
-        go('settings', state);
       };
     }
 
-    // Open inline editor for tentative upcoming rounds
-    root.querySelectorAll('.schedule-item.tentative[data-round-idx]').forEach(item => {
+    if (menuOpen) bindMenu();
+
+    // Open inline editor for tentative or locked rounds (player swap + lock)
+    root.querySelectorAll('.schedule-item[data-action="edit-players"]').forEach(item => {
       item.onclick = () => {
         const i = +item.dataset.roundIdx;
         const r = state.schedule[i];
         editingRoundIdx = i;
+        editingScoreIdx = null;
         editTeamA = [...r.teamA];
         editTeamB = [...r.teamB];
         editResting = state.players.map(p => p.id).filter(id => !r.teamA.includes(id) && !r.teamB.includes(id));
+        editLocked = r.status === 'locked';
         selectedChip = null;
         render();
       };
     });
+
+    // Open inline score editor for completed rounds
+    root.querySelectorAll('.schedule-item[data-action="edit-score"]').forEach(item => {
+      item.onclick = () => {
+        const i = +item.dataset.roundIdx;
+        const r = state.schedule[i];
+        editingScoreIdx = i;
+        editingRoundIdx = null;
+        editScoreDraft = r.score ? [...r.score] : [0, 0];
+        render();
+      };
+    });
+
+    // Score-edit inputs
+    root.querySelectorAll('.edit-score-input').forEach(inp => {
+      inp.oninput = e => {
+        const team = +e.target.dataset.team;
+        const v = parseInt(e.target.value, 10);
+        editScoreDraft[team] = Number.isNaN(v) ? 0 : Math.max(0, v);
+      };
+    });
+
+    const scoreCancel = root.querySelector('#score-edit-cancel');
+    if (scoreCancel) {
+      scoreCancel.onclick = () => {
+        editingScoreIdx = null;
+        render();
+      };
+    }
+
+    const scoreSave = root.querySelector('#score-edit-save');
+    if (scoreSave) {
+      scoreSave.onclick = () => {
+        const i = editingScoreIdx;
+        if (editScoreDraft[0] + editScoreDraft[1] === 0) {
+          alert('Score cannot be 0–0.');
+          return;
+        }
+        const patched = state.schedule.map((r, j) =>
+          j === i ? { ...r, status: 'completed', score: [editScoreDraft[0], editScoreDraft[1]] } : r
+        );
+        state = recomputeFromCompleted({ ...state, schedule: patched });
+        persist();
+        editingScoreIdx = null;
+        render();
+      };
+    }
 
     // Player chip tap — select or swap
     root.querySelectorAll('.player-chip[data-zone]').forEach(chip => {
@@ -367,19 +603,27 @@ export function renderLive(root, go, session) {
       };
     }
 
+    // Lock toggle inside the player-edit editor
+    const lockBtn = root.querySelector('#editor-lock');
+    if (lockBtn) {
+      lockBtn.onclick = () => { editLocked = !editLocked; render(); };
+    }
+
     // Save inline editor
     const saveEditBtn = root.querySelector('#editor-save');
     if (saveEditBtn) {
       saveEditBtn.onclick = () => {
         const i = editingRoundIdx;
+        const newStatus = editLocked ? 'locked' : 'tentative';
         const patchedSchedule = state.schedule.map((r, j) =>
-          j === i ? { ...r, teamA: [...editTeamA], teamB: [...editTeamB], manuallyEdited: true } : r
+          j === i ? { ...r, teamA: [...editTeamA], teamB: [...editTeamB], status: newStatus, manuallyEdited: true } : r
         );
         const rng = createRng((state.seed + i + 5000) >>> 0);
         const reopt = reoptimizeFrom({ ...state, schedule: patchedSchedule }, i + 1, state.weights, rng);
         state = { ...state, schedule: reopt };
         persist();
         editingRoundIdx = null;
+        editLocked = false;
         selectedChip = null;
         render();
       };

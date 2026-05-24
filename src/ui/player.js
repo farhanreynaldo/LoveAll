@@ -5,7 +5,7 @@ export function renderPlayer(root, go, session, playerId) {
   const player = state.players.find(p => p.id === playerId);
   if (!player) {
     // Defensive: shouldn't happen via normal navigation
-    root.innerHTML = `<div class="screen-header"><div class="title">Player not found</div><button class="icon-btn" id="back-btn">×</button></div>`;
+    root.innerHTML = `<div class="screen-header"><div class="title">Player not found</div><div class="header-actions"><button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button><button class="icon-btn" id="back-btn">×</button></div></div>`;
     root.querySelector('#back-btn').onclick = () => go('summary', state);
     return;
   }
@@ -30,7 +30,10 @@ export function renderPlayer(root, go, session, playerId) {
   root.innerHTML = `
     <div class="screen-header">
       <div class="title">${escapeHtml(player.name)}</div>
-      <button class="icon-btn" id="back-btn" aria-label="back">×</button>
+      <div class="header-actions">
+        <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+        <button class="icon-btn" id="back-btn" aria-label="back">×</button>
+      </div>
     </div>
 
     <div class="summary-hero">

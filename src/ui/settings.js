@@ -17,7 +17,10 @@ export function renderSettings(root, go, session) {
     root.innerHTML = `
       <div class="screen-header">
         <div class="title">Fairness settings</div>
-        <button class="icon-btn" id="back-btn" aria-label="back">×</button>
+        <div class="header-actions">
+          <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+          <button class="icon-btn" id="back-btn" aria-label="back">×</button>
+        </div>
       </div>
 
       <p style="color:var(--text-secondary); font-size:13px; margin: 0 0 16px;">
