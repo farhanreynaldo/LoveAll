@@ -1,5 +1,8 @@
 .superpowers/
+.impeccable/
 docs/superpowers/
 node_modules/
 .DS_Store
 *.log
+DESIGN.md
+PRODUCT.md

@@ -28,6 +28,11 @@ export function renderSummary(root, go, session) {
     return (sum / counts.length).toFixed(1);
   })();
 
+  const champion = leaderboard[0];
+  const dateLine = formatDateLine(state.startedAt);
+  const mostPlayedPair = findMostPlayedPair(state);
+  const closestMatch = findClosestMatch(state);
+
   root.innerHTML = `
     <div class="screen-header">
       <div class="title">Session complete</div>
@@ -37,37 +42,72 @@ export function renderSummary(root, go, session) {
       </div>
     </div>
 
-    <div class="summary-hero">
-      <div class="meta">${completedRounds} rounds · ${formatDuration(elapsedMin)}</div>
-      <div class="big">${totalGames} games</div>
-      <div class="meta">played across ${state.players.length} players</div>
-    </div>
+    <article class="recap" aria-label="session recap">
+      <header class="recap-stamp">
+        <span class="recap-mark">LoveAll</span>
+        <span class="recap-date">${escapeHtml(dateLine)}</span>
+      </header>
 
-    <div class="label">Leaderboard · wins</div>
-    <div class="card" style="padding: 4px 0;">
-      ${leaderboard.map((p, i) => `
-        <div class="leader-row clickable" data-player-id="${p.id}">
-          <span class="rank">${i + 1}</span>
-          <span class="name">${escapeHtml(p.name)}</span>
-          <span class="stat">${state.wins[p.id]} W · ${state.losses[p.id]} L</span>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="label">Fairness check</div>
-    <div class="card" style="padding: 4px 0;">
-      <div class="leader-row">
-        <span class="name">Rounds played</span>
-        <span class="stat">${roundsRange[0]}–${roundsRange[1]} per player ${roundsRange[1] - roundsRange[0] <= 1 ? '✓' : ''}</span>
+      <div class="recap-hero">
+        <div class="recap-kicker">Winner</div>
+        <div class="recap-champion">${escapeHtml(champion.name)}</div>
       </div>
-      <div class="leader-row">
-        <span class="name">Unique partners</span>
-        <span class="stat">avg ${avgUniquePartners} / ${state.players.length - 1}</span>
-      </div>
-    </div>
 
-    <button class="btn" id="new-btn" style="margin-top:18px;">New session</button>
-    <button class="btn ghost" id="done-btn" style="margin-top:8px;">Done</button>
+      <div class="recap-strip" role="group" aria-label="session totals">
+        <div class="recap-strip-item"><span class="n">${completedRounds}</span><span class="u">rounds</span></div>
+        <div class="recap-strip-item"><span class="n">${totalGames}</span><span class="u">games</span></div>
+        <div class="recap-strip-item"><span class="n">${formatDuration(elapsedMin)}</span><span class="u">on court</span></div>
+      </div>
+
+      <ol class="roll" aria-label="final standings">
+        ${leaderboard.map((p, i) => {
+          const gf = state.gamesFor[p.id] ?? 0;
+          const ga = state.gamesAgainst[p.id] ?? 0;
+          return `
+            <li class="roll-row${i === 0 ? ' is-leader' : ''}" data-player-id="${p.id}">
+              <span class="roll-rank">${i + 1}</span>
+              <span class="roll-body">
+                <span class="roll-name">${escapeHtml(p.name)}</span>
+                <span class="roll-meta">${gf}–${ga} games · ${state.roundsPlayed[p.id] ?? 0} rounds</span>
+              </span>
+              <span class="roll-wl">
+                <span class="roll-w">${state.wins[p.id]}</span><span class="roll-sep">·</span><span class="roll-l">${state.losses[p.id]}</span>
+              </span>
+            </li>
+          `;
+        }).join('')}
+      </ol>
+
+      ${(mostPlayedPair || closestMatch) ? `
+        <section class="recap-notes" aria-label="notes from the day">
+          <div class="recap-notes-label">Notes</div>
+          ${mostPlayedPair ? `
+            <div class="recap-note">
+              <span class="recap-note-label">Most-played pair</span>
+              <span class="recap-note-body">${escapeHtml(mostPlayedPair.names)} <span class="recap-note-tail">${mostPlayedPair.count}× together</span></span>
+            </div>` : ''}
+          ${closestMatch ? `
+            <div class="recap-note">
+              <span class="recap-note-label">Closest match</span>
+              <span class="recap-note-body">Round ${closestMatch.round} <span class="recap-note-tail">${closestMatch.score}</span></span>
+            </div>` : ''}
+          <div class="recap-note">
+            <span class="recap-note-label">Fairness</span>
+            <span class="recap-note-body">${roundsRange[0]}–${roundsRange[1]} rounds per player ${roundsRange[1] - roundsRange[0] <= 1 ? '· evenly spread' : ''}</span>
+          </div>
+          <div class="recap-note">
+            <span class="recap-note-label">Partners</span>
+            <span class="recap-note-body">avg ${avgUniquePartners} of ${state.players.length - 1} possible</span>
+          </div>
+        </section>` : ''}
+
+      <footer class="recap-foot">Saved on this device · see you next time</footer>
+    </article>
+
+    <div class="recap-actions">
+      <button class="btn" id="share-btn" type="button">Share the ranking</button>
+      <button class="btn ghost" id="new-btn" type="button">New session</button>
+    </div>
   `;
 
   root.querySelector('#close-btn').onclick = () => {
@@ -78,17 +118,11 @@ export function renderSummary(root, go, session) {
     clearSession();
     go('setup');
   };
-  root.querySelector('#done-btn').onclick = () => {
-    if (confirm('Clear this session and return to a blank setup?')) {
-      clearSession();
-      go('setup');
-    }
-  };
-  root.querySelectorAll('.leader-row.clickable').forEach(el => {
-    el.onclick = () => {
-      const pid = el.dataset.playerId;
-      go('player', state, pid);
-    };
+  root.querySelector('#share-btn').onclick = () => shareRanking({
+    leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champion,
+  }, root.querySelector('#share-btn'));
+  root.querySelectorAll('.roll-row').forEach(el => {
+    el.onclick = () => go('player', state, el.dataset.playerId);
   });
 
   function escapeHtml(s) {
@@ -100,4 +134,97 @@ export function renderSummary(root, go, session) {
     const m = min % 60;
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
+}
+
+function formatDateLine(ts) {
+  const d = new Date(ts);
+  const day = d.toLocaleDateString(undefined, { weekday: 'long' });
+  const date = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+  const hour = d.getHours();
+  const slot = hour < 11 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  return `${day} ${slot} · ${date}`;
+}
+
+function firstName(full) {
+  return String(full).trim().split(/\s+/)[0];
+}
+
+function findMostPlayedPair(state) {
+  let best = null;
+  for (const p of state.players) {
+    const partners = state.partnerCounts[p.id] || {};
+    for (const [pid, n] of Object.entries(partners)) {
+      if (!n) continue;
+      if (pid <= p.id) continue;
+      if (!best || n > best.count) {
+        const other = state.players.find(x => x.id === pid);
+        if (!other) continue;
+        best = { count: n, names: `${firstName(p.name)} & ${firstName(other.name)}` };
+      }
+    }
+  }
+  return best && best.count >= 2 ? best : null;
+}
+
+function findClosestMatch(state) {
+  let best = null;
+  state.schedule.forEach((r, i) => {
+    if (!r.score || r.status !== 'completed') return;
+    const [a, b] = r.score;
+    const diff = Math.abs(a - b);
+    const total = a + b;
+    if (total < 2) return;
+    if (!best || diff < best.diff || (diff === best.diff && total > best.total)) {
+      best = { diff, total, round: i + 1, score: `${Math.max(a, b)}–${Math.min(a, b)}` };
+    }
+  });
+  return best;
+}
+
+async function shareRanking(ctx, btn) {
+  const { leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champion } = ctx;
+  const lines = [
+    `🎾 ${dateLine}`,
+    '',
+    ...leaderboard.map((p, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+      return `${medal} ${p.name} — ${state.wins[p.id]}W ${state.losses[p.id]}L`;
+    }),
+    '',
+    `${completedRounds} rounds · ${totalGames} games · ${formatDurationPlain(elapsedMin)}`,
+  ];
+  const text = lines.join('\n');
+  const title = `LoveAll — ${firstName(champion.name)} wins the session`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text });
+      return;
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    flashLabel(btn, 'Copied to clipboard');
+  } catch {
+    flashLabel(btn, 'Copy failed — long-press to share');
+  }
+}
+
+function flashLabel(btn, msg) {
+  if (!btn) return;
+  const prev = btn.textContent;
+  btn.textContent = msg;
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = prev;
+    btn.disabled = false;
+  }, 1600);
+}
+
+function formatDurationPlain(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
