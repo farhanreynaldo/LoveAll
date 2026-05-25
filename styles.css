@@ -288,25 +288,6 @@ input.player-name:focus-visible {
 }
 .skill-dots .dot.filled { background: var(--text); background-clip: content-box; }
 
-.step-dots {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-.step-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--border);
-  display: inline-block;
-}
-.step-dot.active {
-  width: 18px;
-  border-radius: 3px;
-  background: var(--text);
-}
-
 .stepper {
   display: flex;
   align-items: center;

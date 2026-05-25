@@ -7,23 +7,9 @@ const MAX_PLAYERS = 12;
 export function renderSetup(root, go) {
   const players = [];
   let nextIdCounter = 1;
-  let step = 1;
   const lastRoster = loadLastRoster();
 
   function genId() { return `p${nextIdCounter++}`; }
-
-  function render() {
-    if (step === 1) renderStep1();
-    else renderStep2();
-  }
-
-  function stepIndicator() {
-    return `
-      <div class="step-dots" role="presentation" aria-hidden="true">
-        <span class="step-dot ${step === 1 ? 'active' : ''}"></span>
-        <span class="step-dot ${step === 2 ? 'active' : ''}"></span>
-      </div>`;
-  }
 
   function skillDots(current, interactive = false) {
     const labels = { 1: 'Low', 2: 'Mid', 3: 'High' };
@@ -32,18 +18,16 @@ export function renderSetup(root, go) {
     ).join('');
   }
 
-  function renderStep1() {
-    const canAdvance = players.length >= MIN_PLAYERS;
+  function render() {
+    const canStart = players.length >= MIN_PLAYERS;
     const needed = MIN_PLAYERS - players.length;
 
     root.innerHTML = `
-      ${stepIndicator()}
-
       <div class="screen-header">
         <div class="title">Who's playing?</div>
         <div class="header-actions">
           <span style="font-size:var(--text-meta);color:var(--text-secondary);">${
-            canAdvance
+            canStart
               ? `${players.length} player${players.length === 1 ? '' : 's'}`
               : `Need ${needed} to start`
           }</span>
@@ -76,14 +60,14 @@ export function renderSetup(root, go) {
         </div>
       ` : ''}
 
-      <button class="btn" id="next-btn" style="margin-top:16px;" ${!canAdvance ? 'disabled' : ''}>
-        Next →
+      <button class="btn" id="start-btn" style="margin-top:16px;" ${!canStart ? 'disabled' : ''}>
+        Start session
       </button>
     `;
-    bindStep1();
+    bind();
   }
 
-  function bindStep1() {
+  function bind() {
     root.querySelector('#add-form').onsubmit = e => {
       e.preventDefault();
       const input = root.querySelector('#new-name');
@@ -129,49 +113,8 @@ export function renderSetup(root, go) {
       };
     }
 
-    root.querySelector('#next-btn').onclick = () => {
-      if (players.length < MIN_PLAYERS) return;
-      step = 2;
-      render();
-    };
-  }
-
-  function renderStep2() {
-    root.innerHTML = `
-      ${stepIndicator()}
-
-      <div class="screen-header">
-        <div class="title">Ready?</div>
-        <div class="header-actions">
-          <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
-          <button class="icon-btn" id="back-btn" style="font-size:var(--text-control);">← Back</button>
-        </div>
-      </div>
-
-      <div class="label">Players · ${players.length}</div>
-      <div class="card">
-        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">
-          ${players.map(p => `
-            <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:5px 10px;font-size:var(--text-meta);">
-              ${escapeHtml(p.name)}
-              <span class="skill-dots" style="pointer-events:none;">${skillDots(p.seedSkill)}</span>
-            </span>
-          `).join('')}
-        </div>
-      </div>
-
-      <button class="btn" id="start-btn" style="margin-top:18px;">Start session</button>
-    `;
-    bindStep2();
-  }
-
-  function bindStep2() {
-    root.querySelector('#back-btn').onclick = () => {
-      step = 1;
-      render();
-    };
-
     root.querySelector('#start-btn').onclick = () => {
+      if (players.length < MIN_PLAYERS) return;
       saveLastRoster(players);
       const session = createSession({ players: [...players] });
       saveSession(session);
