@@ -239,6 +239,14 @@ input.player-name:focus-visible {
   border-bottom-color: var(--text);
 }
 
+/* One-time scale hint above the roster card. Appears the moment the first
+   player is added — the moment the dots become visible and need a key. */
+.roster-hint {
+  font-size: var(--text-meta);
+  color: var(--text-secondary);
+  margin: 0 4px 8px;
+}
+
 /* Roster row siblings around the name input. */
 .roster-row .roster-skill-label {
   font-size: var(--text-label);

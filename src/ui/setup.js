@@ -26,8 +26,9 @@ export function renderSetup(root, go) {
   }
 
   function skillDots(current, interactive = false) {
+    const labels = { 1: 'Low', 2: 'Mid', 3: 'High' };
     return [1, 2, 3].map(n =>
-      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}"></span>`
+      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}" role="button" aria-label="Set skill to ${labels[n]}" title="${labels[n]}"></span>`
     ).join('');
   }
 
@@ -41,14 +42,18 @@ export function renderSetup(root, go) {
       <div class="screen-header">
         <div class="title">Who's playing?</div>
         <div class="header-actions">
-          <span style="font-size:var(--text-meta);color:var(--text-secondary);">${players.length} of ${MIN_PLAYERS} min</span>
+          <span style="font-size:var(--text-meta);color:var(--text-secondary);">${
+            canAdvance
+              ? `${players.length} player${players.length === 1 ? '' : 's'}`
+              : `Need ${needed} to start`
+          }</span>
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
         </div>
       </div>
 
       <form id="add-form" style="display:flex;gap:6px;margin-bottom:12px;">
         <input type="text" id="new-name" placeholder="Type a name and tap +" autocomplete="off" />
-        <button class="btn small" type="submit" ${players.length >= MAX_PLAYERS ? 'disabled' : ''} style="white-space:nowrap;">+</button>
+        <button class="btn small" type="submit" ${players.length >= MAX_PLAYERS ? 'disabled' : ''} aria-label="Add player" style="white-space:nowrap;">+</button>
       </form>
 
       ${players.length === 0 && lastRoster ? `
@@ -58,6 +63,7 @@ export function renderSetup(root, go) {
       ` : ''}
 
       ${players.length > 0 ? `
+        <p class="roster-hint">Tap dots to set skill: low, mid, high.</p>
         <div class="card" style="padding:4px 12px;">
           ${players.map((p, i) => `
             <div class="row roster-row" data-idx="${i}">
@@ -68,12 +74,6 @@ export function renderSetup(root, go) {
             </div>
           `).join('')}
         </div>
-      ` : ''}
-
-      ${!canAdvance && players.length > 0 ? `
-        <p style="font-size:var(--text-meta);color:var(--text-secondary);margin-top:8px;padding:0 4px;">
-          Need ${needed} more player${needed === 1 ? '' : 's'} to continue
-        </p>
       ` : ''}
 
       <button class="btn" id="next-btn" style="margin-top:16px;" ${!canAdvance ? 'disabled' : ''}>
