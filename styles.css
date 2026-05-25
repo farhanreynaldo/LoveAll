@@ -366,14 +366,21 @@ input.player-name:focus-visible {
   color: var(--text-secondary);
   font-size: var(--text-input);
 }
+/* Final Score card's score input spans the full row to give the 32px
+   numeral a page-wide underline. Compact inline editors (schedule rows)
+   keep the global `width: auto` and stay right-aligned beside the name. */
+.score-card input.score-input {
+  width: 100%;
+  flex: 1 1 auto;
+}
 
 /* Borderless score entry. Selector qualified with the tag
    (`input.score-input` = 0,1,1) to beat `input[type="number"]` and win by
    source order. The hairline underline is a notebook fill-in-the-blank
    line — the affordance the bare numeral was missing. */
 input.score-input {
-  width: 100%;
-  flex: 1 1 auto;
+  width: auto;
+  flex: 0 0 auto;
   min-width: 3ch;
   text-align: right;
   font-size: var(--text-score); /* 32px — matches the live-score display ramp */
