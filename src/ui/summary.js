@@ -101,7 +101,6 @@ export function renderSummary(root, go, session) {
           </div>
         </section>` : ''}
 
-      <footer class="recap-foot">Saved on this device · see you next time</footer>
     </article>
 
     <div class="recap-actions">

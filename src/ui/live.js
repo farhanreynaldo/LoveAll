@@ -49,8 +49,8 @@ export function renderLive(root, go, session) {
           </div>
         </div>
         <div class="card" style="text-align:center;padding:24px;">
-          <p style="color:var(--text-secondary);font-size:14px;">All scheduled rounds complete.</p>
-          <p style="color:var(--text-secondary);font-size:13px;margin-top:8px;">Tap ⋯ to end the session.</p>
+          <p style="color:var(--text-secondary);font-size:var(--text-control);">All scheduled rounds complete.</p>
+          <p style="color:var(--text-secondary);font-size:var(--text-meta);margin-top:8px;">Tap ⋯ to end the session.</p>
         </div>
         ${menuOpen ? menuHtml() : ''}
       `;
@@ -83,41 +83,36 @@ export function renderLive(root, go, session) {
       <div class="label">Now playing</div>
       <div class="card card-hero">
         <div class="row">
-          <span style="font-size:15px;font-weight:500;">${escapeHtml(round.teamA.map(playerName).join(' · '))}</span>
+          <span class="team-name">${escapeHtml(round.teamA.map(playerName).join(' & '))}</span>
         </div>
         <div class="match-vs">vs</div>
         <div class="row">
-          <span style="font-size:15px;font-weight:500;">${escapeHtml(round.teamB.map(playerName).join(' · '))}</span>
+          <span class="team-name">${escapeHtml(round.teamB.map(playerName).join(' & '))}</span>
         </div>
       </div>
+      ${idx === 0 ? `
+        <p class="schedule-hint" style="margin-top:6px;">Tap R1 below to choose different starters.</p>
+      ` : ''}
 
       ${restingIds.length > 0 ? `
         <div class="label">Resting</div>
         <div class="card">
           <div class="row" style="border-bottom:none;padding:10px 4px;">
-            <span style="font-size:14px;color:var(--text-secondary);">${escapeHtml(restingIds.map(playerName).join(' · '))}</span>
+            <span style="font-size:var(--text-control);color:var(--text-secondary);">${escapeHtml(restingIds.map(playerName).join(', '))}</span>
           </div>
         </div>
       ` : ''}
 
-      <div class="label">Game done? Enter final score</div>
-      <div class="card">
-        <div class="match-team">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
-              ${escapeHtml(round.teamA.map(playerName).join(' · '))}
-            </div>
-          </div>
-          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input" data-team="0" value="${scoreDraft[0]}" />
-        </div>
-        <div class="match-team" style="border-top:1px solid var(--border-soft);margin-top:8px;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
-              ${escapeHtml(round.teamB.map(playerName).join(' · '))}
-            </div>
-          </div>
-          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input" data-team="1" value="${scoreDraft[1]}" />
-        </div>
+      <div class="label">Final score</div>
+      <div class="card score-card">
+        <label class="match-team">
+          <span class="team-name score-team-name">${escapeHtml(round.teamA.map(playerName).join(' & '))}</span>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input${scoreDraft[0] === 0 ? ' is-empty' : ''}" data-team="0" value="${scoreDraft[0]}" aria-label="Score for ${escapeHtml(round.teamA.map(playerName).join(' and '))}" />
+        </label>
+        <label class="match-team">
+          <span class="team-name score-team-name">${escapeHtml(round.teamB.map(playerName).join(' & '))}</span>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input${scoreDraft[1] === 0 ? ' is-empty' : ''}" data-team="1" value="${scoreDraft[1]}" aria-label="Score for ${escapeHtml(round.teamB.map(playerName).join(' and '))}" />
+        </label>
       </div>
 
       <button class="btn" id="save-btn" style="margin-top:8px;"
@@ -152,10 +147,10 @@ export function renderLive(root, go, session) {
               }).join('')
             : (upcomingPreview ? (() => {
                 const realIdx0 = state.schedule.indexOf(upcomingPreview);
-                return `<div class="schedule-item" style="opacity:0.6;font-size:13px;">
+                return `<div class="schedule-item" style="opacity:0.6;font-size:var(--text-meta);">
                   R${realIdx0 + 1} · ${escapeHtml(upcomingPreview.teamA.map(playerName).join('/'))} vs ${escapeHtml(upcomingPreview.teamB.map(playerName).join('/'))}
                 </div>`;
-              })() : `<div class="schedule-item" style="opacity:0.6;font-size:13px;">No upcoming rounds</div>`)
+              })() : `<div class="schedule-item" style="opacity:0.6;font-size:var(--text-meta);">No upcoming rounds</div>`)
           }
         </div>
       ` : ''}
@@ -213,11 +208,11 @@ export function renderLive(root, go, session) {
       <div class="schedule-item-editor" data-round-idx="${i}">
         <div class="editor-label">Round ${i + 1} · edit final score</div>
         <div class="match-team">
-          <div style="flex:1;min-width:0;font-size:13px;">${escapeHtml(r.teamA.map(playerName).join(' · '))}</div>
+          <div style="flex:1;min-width:0;font-size:var(--text-meta);">${escapeHtml(r.teamA.map(playerName).join(' & '))}</div>
           <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="0" value="${editScoreDraft[0]}" />
         </div>
-        <div class="match-team" style="border-top:1px solid var(--border-soft);margin-top:8px;">
-          <div style="flex:1;min-width:0;font-size:13px;">${escapeHtml(r.teamB.map(playerName).join(' · '))}</div>
+        <div class="match-team" style="border-top:1px solid var(--border-soft);">
+          <div style="flex:1;min-width:0;font-size:var(--text-meta);">${escapeHtml(r.teamB.map(playerName).join(' & '))}</div>
           <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="1" value="${editScoreDraft[1]}" />
         </div>
         <div class="editor-actions">
@@ -281,7 +276,6 @@ export function renderLive(root, go, session) {
       <button id="end-session-btn">End session</button>
       <button id="m-add">Add player</button>
       <button id="m-remove">Remove player</button>
-      <button id="m-skip">Skip current round</button>
       <button id="m-settings">Fairness settings</button>
       <button id="m-cancel" style="color:var(--text-secondary)">Close</button>
     `;
@@ -362,13 +356,13 @@ export function renderLive(root, go, session) {
       <div class="sheet-view">
         <div class="sheet-header">
           <button class="sheet-back" id="sheet-back" aria-label="back">←</button>
-          <div class="sheet-title">Skip round ${idx + 1}</div>
+          <div class="sheet-title">Skip round ${idx + 1}?</div>
         </div>
-        <p class="sheet-hint">Skipped rounds don't count toward stats. A short reason helps you remember later.</p>
+        <p class="sheet-hint">Useful when someone's running late. We'll add a fresh round at the end so everyone still gets the same number of games.</p>
         <input type="text" id="skip-reason" placeholder="Reason (optional)" value="${escapeHtml(skipReason)}" autocomplete="off" />
         <div class="sheet-actions">
           <button class="btn ghost small" id="skip-cancel">Cancel</button>
-          <button class="btn small" id="skip-confirm">Skip round</button>
+          <button class="btn small" id="skip-confirm">Skip and shuffle</button>
         </div>
       </div>
     `;
@@ -389,7 +383,6 @@ export function renderLive(root, go, session) {
       root.querySelector('#m-cancel').onclick = closeMenu;
       root.querySelector('#m-add').onclick = () => { menuView = 'add'; render(); };
       root.querySelector('#m-remove').onclick = () => { menuView = 'remove'; render(); };
-      root.querySelector('#m-skip').onclick = () => { menuView = 'skip'; render(); };
       root.querySelector('#m-settings').onclick = () => { menuOpen = false; go('settings', state); };
       return;
     }
@@ -467,9 +460,24 @@ export function renderLive(root, go, session) {
         confirmBtn.onclick = () => {
           const idx = currentRoundIndex();
           if (idx < 0) { closeMenu(); return; }
-          state.schedule[idx].status = 'skipped';
-          state.schedule[idx].score = null;
-          state.schedule[idx].skipReason = skipReason.trim() || null;
+          const reason = skipReason.trim() || null;
+          const newSchedule = state.schedule.map((r, i) =>
+            i === idx ? { ...r, status: 'skipped', score: null, skipReason: reason } : r
+          );
+          // Append a placeholder tentative round; reoptimizeFrom will replace
+          // it with a fair matchup, naturally favoring players who missed the
+          // skipped round (lower roundsPlayed → lower cost).
+          const ids = state.players.map(p => p.id);
+          newSchedule.push({
+            teamA: ids.slice(0, 2),
+            teamB: ids.slice(2, 4),
+            status: 'tentative',
+            score: null,
+            manuallyEdited: false,
+          });
+          const rng = createRng((state.seed + 3000) >>> 0);
+          const reopt = reoptimizeFrom({ ...state, schedule: newSchedule }, idx + 1, state.weights, rng);
+          state = { ...state, schedule: reopt };
           scoreDraft = [0, 0];
           persist();
           closeMenu();
@@ -486,6 +494,7 @@ export function renderLive(root, go, session) {
         const team = +e.target.dataset.team;
         const v = parseInt(e.target.value, 10);
         scoreDraft[team] = Number.isNaN(v) ? 0 : Math.max(0, v);
+        e.target.classList.toggle('is-empty', scoreDraft[team] === 0);
         const saveBtn = root.querySelector('#save-btn');
         if (saveBtn) saveBtn.disabled = scoreDraft[0] + scoreDraft[1] === 0;
       };

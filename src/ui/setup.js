@@ -41,7 +41,7 @@ export function renderSetup(root, go) {
       <div class="screen-header">
         <div class="title">Who's playing?</div>
         <div class="header-actions">
-          <span style="font-size:12px;color:var(--text-secondary);">${players.length} of ${MIN_PLAYERS} min</span>
+          <span style="font-size:var(--text-meta);color:var(--text-secondary);">${players.length} of ${MIN_PLAYERS} min</span>
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
         </div>
       </div>
@@ -60,20 +60,18 @@ export function renderSetup(root, go) {
       ${players.length > 0 ? `
         <div class="card" style="padding:4px 12px;">
           ${players.map((p, i) => `
-            <div class="row" data-idx="${i}">
-              <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}"
-                style="border:none;background:transparent;flex:1;padding:0;font-size:16px;" />
-              <span style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-right:6px;">Skill</span>
-              <div class="skill-dots" data-idx="${i}" style="cursor:pointer;display:flex;align-items:center;">${skillDots(p.seedSkill)}</div>
-              <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove"
-                style="font-size:16px;color:var(--text-secondary);min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">×</button>
+            <div class="row roster-row" data-idx="${i}">
+              <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}" />
+              <span class="roster-skill-label">Skill</span>
+              <div class="skill-dots" data-idx="${i}">${skillDots(p.seedSkill)}</div>
+              <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove">×</button>
             </div>
           `).join('')}
         </div>
       ` : ''}
 
       ${!canAdvance && players.length > 0 ? `
-        <p style="font-size:12px;color:var(--text-secondary);margin-top:8px;padding:0 4px;">
+        <p style="font-size:var(--text-meta);color:var(--text-secondary);margin-top:8px;padding:0 4px;">
           Need ${needed} more player${needed === 1 ? '' : 's'} to continue
         </p>
       ` : ''}
@@ -146,7 +144,7 @@ export function renderSetup(root, go) {
         <div class="title">Ready?</div>
         <div class="header-actions">
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
-          <button class="icon-btn" id="back-btn" style="font-size:14px;">← Back</button>
+          <button class="icon-btn" id="back-btn" style="font-size:var(--text-control);">← Back</button>
         </div>
       </div>
 
@@ -154,7 +152,7 @@ export function renderSetup(root, go) {
       <div class="card">
         <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">
           ${players.map(p => `
-            <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:5px 10px;font-size:13px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:5px 10px;font-size:var(--text-meta);">
               ${escapeHtml(p.name)}
               <span class="skill-dots" style="pointer-events:none;">${skillDots(p.seedSkill)}</span>
             </span>

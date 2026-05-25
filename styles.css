@@ -8,6 +8,33 @@
   --accent: #1a1a1a;
   --accent-text: #ffffff;
   --shadow: 0 4px 16px rgba(0,0,0,0.06);
+
+  /* Typography ramp — DESIGN.md §3. Fixed rem scale, system font stack. */
+  --font-sans: -apple-system, system-ui, sans-serif;
+  --text-display:  2.375rem;  /* 38px — recap champion, summary numeral */
+  --text-score:    2rem;      /* 32px — live score, player intro */
+  --text-stat:     1.25rem;   /* 20px — recap strip stat (off-ramp, kept for grid balance) */
+  --text-title:    1.125rem;  /* 18px — screen title, stepper value */
+  --text-input:    1rem;      /* 16px — form inputs (iOS auto-zoom floor) */
+  --text-body:     0.9375rem; /* 15px — body, match readout, list primary */
+  --text-control:  0.875rem;  /* 14px — buttons, setting name, leader row */
+  --text-meta:     0.8125rem; /* 13px — secondary body: hints, chips, schedule items */
+  --text-label:    0.6875rem; /* 11px — section labels, recap kicker */
+  --text-micro:    0.625rem;  /* 10px — editor sub-labels, recap units */
+
+  --weight-thin: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --lh-display: 1;
+  --lh-tight: 1.2;
+  --lh-snug: 1.3;
+  --lh-body: 1.4;
+
+  --tracking-label: 0.0625rem; /* 1px on uppercase micro/label */
+  --tracking-display: -0.01em;
 }
 
 body.dark {
@@ -24,16 +51,23 @@ body.dark {
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html, body {
+html { font-size: 100%; } /* 1rem = 16px; respects user zoom */
+
+body {
   margin: 0;
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.4;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-body);
   min-height: 100vh;
   font-variant-numeric: tabular-nums;
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 :focus-visible {
@@ -71,22 +105,28 @@ html, body {
   align-items: center;
   margin-bottom: 18px;
 }
-.screen-header .title { font-weight: 700; font-size: 18px; }
+.screen-header .title {
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  line-height: var(--lh-tight);
+}
 .screen-header .header-actions {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 .theme-toggle-btn {
-  font-size: 18px;
-  line-height: 1;
+  font-size: var(--text-title); /* glyph, not text */
+  line-height: var(--lh-display);
 }
 
 .label {
-  font-size: 11px;
+  font-size: var(--text-label);
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-tight);
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: var(--tracking-label);
   margin: 16px 0 8px;
 }
 
@@ -105,14 +145,20 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 10px 4px;
   border-bottom: 1px solid var(--border-soft);
+  transition: background-color 160ms ease-out;
 }
 .row:last-child { border-bottom: none; }
+/* Roster-row tint: when the name input is being edited, the whole line
+   lights up like a highlighted notebook entry. The input itself stays
+   borderless; the tint is the affordance. */
+.row:focus-within { background: var(--border-soft); }
 
 .match-vs {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-meta);
   padding: 4px 4px;
 }
 
@@ -127,8 +173,9 @@ html, body {
   border: none;
   border-radius: 8px;
   padding: 14px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--text-control);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-tight);
   width: 100%;
   cursor: pointer;
   font-family: inherit;
@@ -144,14 +191,15 @@ html, body {
 .btn.small {
   width: auto;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: var(--text-meta);
 }
 
 .icon-btn {
   background: transparent;
   border: none;
   color: var(--text);
-  font-size: 20px;
+  font-size: var(--text-stat); /* 20px — glyph, not text */
+  line-height: var(--lh-display);
   padding: 8px;
   cursor: pointer;
 }
@@ -162,9 +210,57 @@ input[type="text"], input[type="number"] {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px;
-  font-size: 16px;
+  font-size: var(--text-input); /* 16px floor — anything smaller triggers iOS Safari auto-zoom on focus */
   font-family: inherit;
   width: 100%;
+}
+
+/* Roster name input — inline, borderless, lives inside `.row`.
+   Same notebook-line affordance as the score input: no outline box on focus,
+   underline switches to ink, parent row gains a tonal tint. Tag-qualified
+   selector beats the global `input[type="text"]` rule by source order. */
+input.player-name {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid transparent;
+  padding: 6px 0;
+  font-size: var(--text-input);
+  font-family: inherit;
+  color: var(--text);
+  transition: border-color 160ms ease-out;
+}
+input.player-name:focus,
+input.player-name:focus-visible {
+  outline: none;
+  border-bottom-color: var(--text);
+}
+
+/* Roster row siblings around the name input. */
+.roster-row .roster-skill-label {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.roster-row .skill-dots {
+  cursor: pointer;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.roster-row .remove-btn {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
 }
 
 .skill-dots {
@@ -215,12 +311,13 @@ input[type="text"], input[type="number"] {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 16px;
+  font-size: var(--text-input); /* glyph */
   cursor: pointer;
 }
 .stepper .val {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: var(--text-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-tight);
   min-width: 24px;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -230,27 +327,85 @@ input[type="text"], input[type="number"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  gap: 12px;
+  padding: 2px 0;
 }
-.match-team .names { font-size: 15px; }
+.match-team .names { font-size: var(--text-body); }
 .match-team .score {
-  font-size: 32px;
-  font-weight: 300;
+  font-size: var(--text-score);
+  font-weight: var(--weight-thin);
+  line-height: var(--lh-display);
   font-variant-numeric: tabular-nums;
 }
-.score-input {
-  width: 72px;
-  flex: 0 0 72px;
-  text-align: center;
-  font-size: 28px;
-  font-weight: 300;
-  font-variant-numeric: tabular-nums;
-  padding: 6px 8px;
-  background: var(--surface);
+
+/* Team name — used in Now Playing hero and the Final Score card.
+   Allowed to wrap onto multiple lines so a long pair name (e.g. "Alessandra
+   & Konstantinos") never pushes the score input off-row or out of the card. */
+.team-name {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-tight);
   color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.score-team-name { letter-spacing: 0; }
+
+/* Final Score card — borderless inputs, score reads as a display value.
+   The card is the page's visual climax; padding is more generous than the
+   Now Playing hero so the 32px numerals have room to breathe. */
+.score-card { padding: 8px 20px; }
+.score-card .match-team {
+  padding: 20px 4px;
+  border-bottom: 1px solid var(--border-soft);
+  cursor: text;
+  min-height: 72px;
+}
+.score-card .match-team:last-child { border-bottom: none; }
+
+/* Borderless score entry. Selector qualified with the tag
+   (`input.score-input` = 0,1,1) to beat `input[type="number"]` and win by
+   source order. The hairline underline is a notebook fill-in-the-blank
+   line — the affordance the bare numeral was missing. */
+input.score-input {
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 3ch;
+  text-align: right;
+  font-size: var(--text-score); /* 32px — matches the live-score display ramp */
+  font-weight: var(--weight-thin);
+  line-height: var(--lh-display);
+  font-variant-numeric: tabular-nums;
+  padding: 0 2px 4px;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
   font-family: inherit;
+  caret-color: var(--accent);
+  transition: color 160ms ease-out, border-color 160ms ease-out;
+}
+/* Unentered zero reads as a quiet placeholder — paper waiting for ink. */
+input.score-input.is-empty { color: var(--text-secondary); }
+input.score-input:focus {
+  outline: none;
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+.score-card .match-team:focus-within {
+  background: var(--border-soft);
+  border-radius: 8px;
+  margin: 0 -14px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+/* Schedule-row score editor stays denser — one step smaller. */
+input.edit-score-input {
+  font-size: 1.75rem; /* 28px */
+  padding-right: 4px;
 }
 .score-input::-webkit-outer-spin-button,
 .score-input::-webkit-inner-spin-button {
@@ -270,13 +425,13 @@ input[type="text"], input[type="number"] {
   background: var(--surface);
   color: var(--text);
   border-radius: 6px;
-  font-size: 16px;
+  font-size: var(--text-input); /* glyph */
   cursor: pointer;
   font-family: inherit;
 }
 
 .next-block {
-  font-size: 12px;
+  font-size: var(--text-meta);
   color: var(--text-secondary);
   margin-top: 14px;
   padding-top: 12px;
@@ -284,10 +439,10 @@ input[type="text"], input[type="number"] {
 }
 
 .schedule-hint {
-  font-size: 13px;
+  font-size: var(--text-meta);
   color: var(--text-secondary);
   margin: 0 0 8px;
-  line-height: 1.35;
+  line-height: var(--lh-snug);
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -317,7 +472,7 @@ input[type="text"], input[type="number"] {
 }
 .text-link.quiet {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-meta);
 }
 
 .inline-action-row {
@@ -329,7 +484,7 @@ input[type="text"], input[type="number"] {
 .schedule-item {
   padding: 14px 4px;
   border-bottom: 1px solid var(--border-soft);
-  font-size: 13px;
+  font-size: var(--text-meta);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -337,6 +492,15 @@ input[type="text"], input[type="number"] {
   color: var(--text);
   cursor: default;
   transition: background-color 220ms ease-out;
+}
+/* Dense list: truncate the row text rather than wrap. The full team names
+   are revealed inline when the row is tapped to edit. */
+.schedule-item > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .schedule-item:last-child {
   border-bottom: none;
@@ -349,7 +513,7 @@ input[type="text"], input[type="number"] {
   transition: none;
 }
 .schedule-item.is-current {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 .schedule-item-affordance {
   color: var(--text-secondary);
@@ -366,11 +530,11 @@ input[type="text"], input[type="number"] {
 .schedule-item.completed,
 .schedule-item.skipped {
   padding: 8px 4px;
-  font-size: 12px;
+  font-size: var(--text-label);
 }
 .schedule-item.completed > span { opacity: 0.4; }
 .schedule-item.skipped > span { opacity: 0.35; }
-.schedule-item.locked { font-weight: 600; }
+.schedule-item.locked { font-weight: var(--weight-semibold); }
 .schedule-item.edited > span::after { content: ' ✎'; color: var(--text-secondary); margin-left: 4px; }
 
 .menu-sheet {
@@ -396,7 +560,7 @@ input[type="text"], input[type="number"] {
   border: none;
   color: var(--text);
   padding: 14px;
-  font-size: 15px;
+  font-size: var(--text-body);
   cursor: pointer;
   border-bottom: 1px solid var(--border-soft);
   font-family: inherit;
@@ -414,7 +578,7 @@ input[type="text"], input[type="number"] {
   background: transparent;
   border: none;
   color: var(--text);
-  font-size: 18px;
+  font-size: var(--text-title); /* chevron */
   padding: 6px 10px;
   cursor: pointer;
   border-bottom: none;
@@ -422,14 +586,15 @@ input[type="text"], input[type="number"] {
   text-align: left;
 }
 .sheet-view .sheet-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--text-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-tight);
   flex: 1;
 }
 .sheet-view .sheet-hint {
-  font-size: 13px;
+  font-size: var(--text-meta);
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: var(--lh-body);
   margin: 0 0 12px;
 }
 .sheet-view input[type="text"] {
@@ -443,10 +608,10 @@ input[type="text"], input[type="number"] {
   padding: 6px 0 14px;
 }
 .sheet-view .sheet-row-label {
-  font-size: 11px;
+  font-size: var(--text-label);
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: var(--tracking-label);
 }
 .sheet-view .sheet-actions {
   display: flex;
@@ -481,15 +646,15 @@ input[type="text"], input[type="number"] {
   border-bottom: 1px solid var(--border-soft);
 }
 .recap-mark {
-  font-size: 11px;
-  letter-spacing: 1.5px;
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 .recap-date {
-  font-size: 11px;
-  letter-spacing: 0.4px;
+  font-size: var(--text-label);
+  letter-spacing: 0.025em;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -499,17 +664,17 @@ input[type="text"], input[type="number"] {
   padding: 6px 0 4px;
 }
 .recap-kicker {
-  font-size: 11px;
-  letter-spacing: 1.5px;
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
 .recap-champion {
-  font-size: 38px;
+  font-size: var(--text-display);
   line-height: 1.05;
-  font-weight: 300;
-  letter-spacing: -0.01em;
+  font-weight: var(--weight-thin);
+  letter-spacing: var(--tracking-display);
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -529,15 +694,15 @@ input[type="text"], input[type="number"] {
 }
 .recap-strip-item:first-child { border-left: none; }
 .recap-strip-item .n {
-  font-size: 20px;
-  font-weight: 300;
+  font-size: var(--text-stat);
+  font-weight: var(--weight-thin);
   font-variant-numeric: tabular-nums;
   color: var(--text);
-  line-height: 1;
+  line-height: var(--lh-display);
 }
 .recap-strip-item .u {
-  font-size: 10px;
-  letter-spacing: 1px;
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-secondary);
 }
@@ -566,8 +731,8 @@ input[type="text"], input[type="number"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: var(--text-meta);
+  font-weight: var(--weight-regular);
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
@@ -579,10 +744,10 @@ input[type="text"], input[type="number"] {
   gap: 2px;
 }
 .roll-name {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
   color: var(--text);
-  line-height: 1.2;
+  line-height: var(--lh-tight);
 }
 .roll-row.is-leader {
   background: var(--border);
@@ -591,22 +756,22 @@ input[type="text"], input[type="number"] {
   padding: 16px 12px;
   margin: 4px -8px;
 }
-.roll-row.is-leader .roll-name { font-weight: 600; }
+.roll-row.is-leader .roll-name { font-weight: var(--weight-semibold); }
 .roll-meta {
-  font-size: 11px;
+  font-size: var(--text-label);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.0125em;
 }
 .roll-wl {
   font-variant-numeric: tabular-nums;
-  font-size: 15px;
+  font-size: var(--text-body);
   color: var(--text);
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
 }
-.roll-wl .roll-w { font-weight: 500; }
+.roll-wl .roll-w { font-weight: var(--weight-medium); }
 .roll-wl .roll-l { color: var(--text-secondary); }
 .roll-wl .roll-sep { color: var(--text-secondary); }
 
@@ -618,8 +783,8 @@ input[type="text"], input[type="number"] {
   border-top: 1px solid var(--border-soft);
 }
 .recap-notes-label {
-  font-size: 10px;
-  letter-spacing: 1px;
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-secondary);
   margin-bottom: 2px;
@@ -629,8 +794,8 @@ input[type="text"], input[type="number"] {
   justify-content: space-between;
   align-items: baseline;
   gap: 10px;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--text-meta);
+  line-height: var(--lh-body);
 }
 .recap-note-label {
   color: var(--text-secondary);
@@ -643,15 +808,15 @@ input[type="text"], input[type="number"] {
 }
 .recap-note-tail {
   color: var(--text-secondary);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   margin-left: 4px;
 }
 
 .recap-foot {
-  font-size: 11px;
+  font-size: var(--text-label);
   color: var(--text-secondary);
   text-align: center;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.02em;
   padding-top: 6px;
   border-top: 1px solid var(--border-soft);
 }
@@ -669,21 +834,21 @@ input[type="text"], input[type="number"] {
   margin-bottom: 8px;
 }
 .player-intro-name {
-  font-size: 32px;
-  font-weight: 300;
+  font-size: var(--text-score);
+  font-weight: var(--weight-thin);
   line-height: 1.05;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-display);
   color: var(--text);
 }
 .player-intro-meta {
-  font-size: 12px;
+  font-size: var(--text-meta);
   color: var(--text-secondary);
   margin-top: 6px;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.0125em;
 }
 .stat-quiet {
   color: var(--text-secondary);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   margin-left: 2px;
 }
 .leader-row {
@@ -691,7 +856,7 @@ input[type="text"], input[type="number"] {
   align-items: center;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border-soft);
-  font-size: 14px;
+  font-size: var(--text-control);
 }
 .leader-row:last-child { border-bottom: none; }
 .leader-row .rank { color: var(--text-secondary); width: 18px; font-variant-numeric: tabular-nums; }
@@ -704,17 +869,17 @@ input[type="text"], input[type="number"] {
   background: var(--bg);
 }
 .editor-label {
-  font-size: 11px;
+  font-size: var(--text-label);
   color: var(--text-secondary);
   margin-bottom: 10px;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.02em;
 }
 .editor-section { margin-bottom: 10px; }
 .editor-section-label {
-  font-size: 10px;
+  font-size: var(--text-micro);
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: var(--tracking-label);
   margin-bottom: 4px;
 }
 .chip-row {
@@ -728,7 +893,7 @@ input[type="text"], input[type="number"] {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: var(--text-meta);
   font-family: inherit;
   cursor: pointer;
 }
@@ -763,8 +928,17 @@ input[type="text"], input[type="number"] {
 }
 .setting-row:last-child { border-bottom: none; }
 .setting-meta { flex: 1; min-width: 0; }
-.setting-name { font-size: 14px; font-weight: 500; }
-.setting-hint { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.3; }
+.setting-name {
+  font-size: var(--text-control);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-snug);
+}
+.setting-hint {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: var(--lh-snug);
+}
 .setting-input {
   flex: 0 0 92px;
   width: 92px;

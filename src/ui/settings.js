@@ -23,7 +23,7 @@ export function renderSettings(root, go, session) {
         </div>
       </div>
 
-      <p style="color:var(--text-secondary); font-size:13px; margin: 0 0 16px;">
+      <p style="color:var(--text-secondary); font-size:var(--text-meta); margin: 0 0 16px;">
         These weights control how the scheduler picks each round.
         Larger weights mean stronger penalties for unfairness on that dimension.
         Changes re-optimize the remaining schedule immediately.
