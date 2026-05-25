@@ -208,11 +208,11 @@ export function renderLive(root, go, session) {
       <div class="schedule-item-editor" data-round-idx="${i}">
         <div class="editor-label">Round ${i + 1} · edit final score</div>
         <div class="match-team">
-          <div style="flex:1;min-width:0;font-size:var(--text-meta);">${escapeHtml(r.teamA.map(playerName).join(' & '))}</div>
+          <div class="editor-team-name">${escapeHtml(r.teamA.map(playerName).join(' & '))}</div>
           <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="0" value="${editScoreDraft[0]}" />
         </div>
         <div class="match-team" style="border-top:1px solid var(--border-soft);">
-          <div style="flex:1;min-width:0;font-size:var(--text-meta);">${escapeHtml(r.teamB.map(playerName).join(' & '))}</div>
+          <div class="editor-team-name">${escapeHtml(r.teamB.map(playerName).join(' & '))}</div>
           <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="1" value="${editScoreDraft[1]}" />
         </div>
         <div class="editor-actions">
