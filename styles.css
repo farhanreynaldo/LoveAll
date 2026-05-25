@@ -357,21 +357,34 @@ input.player-name:focus-visible {
    The card is the page's visual climax; padding is more generous than the
    Now Playing hero so the 32px numerals have room to breathe. */
 .score-card { padding: 8px 20px; }
+/* Stack name above score so a long pair name ("Alessandra & Konstantinos")
+   never squeezes the 32px numeral on a 360px viewport. The score then sits
+   on its own page-wide underline — the notebook fill-in-the-blank pattern
+   at full width, with a generous tap target. */
 .score-card .match-team {
-  padding: 20px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 16px 4px;
   border-bottom: 1px solid var(--border-soft);
   cursor: text;
-  min-height: 72px;
 }
 .score-card .match-team:last-child { border-bottom: none; }
+.score-card .team-name {
+  flex: 0 0 auto;
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  font-size: var(--text-input);
+}
 
 /* Borderless score entry. Selector qualified with the tag
    (`input.score-input` = 0,1,1) to beat `input[type="number"]` and win by
    source order. The hairline underline is a notebook fill-in-the-blank
    line — the affordance the bare numeral was missing. */
 input.score-input {
-  width: auto;
-  flex: 0 0 auto;
+  width: 100%;
+  flex: 1 1 auto;
   min-width: 3ch;
   text-align: right;
   font-size: var(--text-score); /* 32px — matches the live-score display ramp */
