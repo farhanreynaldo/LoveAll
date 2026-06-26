@@ -1053,3 +1053,28 @@ input.edit-score-input {
   flex: 1 1 140px;
 }
 .roster-row { flex-wrap: wrap; row-gap: 6px; }
+
+.lock-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "glyph label" "glyph hint";
+  column-gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.lock-toggle.is-locked {
+  border-color: var(--text);
+  background: var(--border-soft);
+}
+.lock-glyph { grid-area: glyph; width: 22px; height: 22px; }
+.lock-label { grid-area: label; font-weight: 600; font-size: var(--text-control); }
+.lock-hint { grid-area: hint; font-size: var(--text-meta); color: var(--text-secondary); }

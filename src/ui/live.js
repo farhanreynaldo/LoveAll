@@ -250,8 +250,14 @@ export function renderLive(root, go, session) {
           </div>
         </div>
         <div class="editor-lock-row">
-          <button class="player-chip ${editLocked ? 'selected' : ''}" id="editor-lock" type="button">
-            ${editLocked ? 'Locked: re-optimize won\'t touch this round' : 'Lock this round'}
+          <button class="lock-toggle ${editLocked ? 'is-locked' : ''}" id="editor-lock" type="button"
+            role="switch" aria-checked="${editLocked}">
+            <svg class="lock-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2"/>
+              <path d="${editLocked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2.2'}"/>
+            </svg>
+            <span class="lock-label">${editLocked ? 'Locked' : 'Unlocked'}</span>
+            <span class="lock-hint">${editLocked ? "Re-optimize won't touch this round" : 'Re-optimize may change this round'}</span>
           </button>
         </div>
         <div class="editor-actions">
