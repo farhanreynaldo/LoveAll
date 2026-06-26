@@ -46,7 +46,6 @@ export function renderSetup(root, go) {
         <button type="button" class="segment ${format === 'doubles' ? 'is-active' : ''}" role="radio" aria-checked="${format === 'doubles'}" data-format="doubles">Doubles</button>
         <button type="button" class="segment ${format === 'singles' ? 'is-active' : ''}" role="radio" aria-checked="${format === 'singles'}" data-format="singles">Singles</button>
       </div>
-      ${format === 'singles' ? `<p class="roster-hint">Singles plays two at a time — everyone else rests and rotates in.</p>` : ''}
 
       <form id="add-form" style="display:flex;gap:6px;margin-bottom:12px;">
         <input type="text" id="new-name" placeholder="Type a name and tap +" autocomplete="off" />
