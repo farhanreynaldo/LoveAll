@@ -50,8 +50,8 @@ export function renderLive(root, go, session) {
         </div>
         <div class="card" style="text-align:center;padding:24px;">
           <p style="color:var(--text-secondary);font-size:var(--text-control);">All scheduled rounds complete.</p>
-          <p style="color:var(--text-secondary);font-size:var(--text-meta);margin-top:8px;">Tap ⋯ to end the session.</p>
         </div>
+        <button class="btn" id="end-session-final" style="margin-top:12px;">End session &amp; see results</button>
         ${menuOpen ? menuHtml() : ''}
       `;
       bind();
@@ -551,6 +551,10 @@ export function renderLive(root, go, session) {
         render();
       };
     }
+
+    // End session button on completed screen
+    const endFinalBtn = root.querySelector('#end-session-final');
+    if (endFinalBtn) endFinalBtn.onclick = () => go('summary', state);
 
     if (menuOpen) bindMenu();
 
