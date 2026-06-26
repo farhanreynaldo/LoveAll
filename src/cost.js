@@ -10,7 +10,7 @@ function restPenalty(candidate, state) {
   const minRounds = Math.min(...Object.values(state.roundsPlayed));
   let sum = 0;
   for (const p of onCourt) {
-    const diff = state.roundsPlayed[p] - minRounds;
+    const diff = (state.roundsPlayed[p] ?? 0) - minRounds;
     sum += diff * diff;
   }
   return sum;
@@ -21,7 +21,7 @@ function partnerPenalty(candidate, state) {
   for (const team of [candidate.teamA, candidate.teamB]) {
     for (let i = 0; i < team.length; i++) {
       for (let j = i + 1; j < team.length; j++) {
-        const c = state.partnerCounts[team[i]][team[j]] ?? 0;
+        const c = state.partnerCounts[team[i]]?.[team[j]] ?? 0;
         sum += c * c;
       }
     }
@@ -33,7 +33,7 @@ function opponentPenalty(candidate, state) {
   let sum = 0;
   for (const x of candidate.teamA) {
     for (const y of candidate.teamB) {
-      const c = state.opponentCounts[x][y] ?? 0;
+      const c = state.opponentCounts[x]?.[y] ?? 0;
       sum += c * c;
     }
   }
@@ -41,7 +41,7 @@ function opponentPenalty(candidate, state) {
 }
 
 function skillPenalty(candidate, state) {
-  const teamSum = team => team.reduce((s, id) => s + state.elo[id], 0);
+  const teamSum = team => team.reduce((s, id) => s + (state.elo[id] ?? 0), 0);
   const diff = (teamSum(candidate.teamA) - teamSum(candidate.teamB)) / 100;
   return diff * diff;
 }

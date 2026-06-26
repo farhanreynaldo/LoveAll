@@ -7,6 +7,8 @@ import {
   addPlayer,
   removePlayer,
 } from '../src/state.js';
+import { reoptimizeFrom } from '../src/scheduler.js';
+import { createRng } from '../src/rng.js';
 
 const PLAYERS = [
   { id: 'a', name: 'Aldo', seedSkill: 3 },
@@ -77,6 +79,40 @@ test('removePlayer drops them from state and all counts', () => {
   assert.equal(next.players.length, 5);
   assert.equal(next.elo.f, undefined);
   assert.equal(next.partnerCounts.a.f, undefined);
+});
+
+test('removePlayer retains the name so historical rounds never show a raw id', () => {
+  // Regression: completed rounds legitimately reference a removed player by id.
+  // Without name retention, the live screen rendered the id ("p7") as the name.
+  const s = createSession({ players: PLAYERS, targetRounds: 4, seed: 1 });
+  const next = removePlayer(s, 'f');
+  const retained = next.removedPlayers.find(p => p.id === 'f');
+  assert.equal(retained?.name, 'Priya');
+});
+
+test('removePlayer scrubs pending rounds and reoptimize replays history without throwing', () => {
+  // Regression: removing a player mid-session used to leave them in the
+  // schedule while their count maps were deleted, so reoptimizeFrom threw on
+  // the missing maps. Completed rounds stay intact; pending rounds drop them.
+  let s = createSession({ players: PLAYERS, targetRounds: 6, seed: 7 });
+  s = applyScore(s, 0, 6, 2); // round 0 becomes completed history
+  const idx = s.schedule.findIndex(r => r.status !== 'completed' && r.status !== 'skipped');
+  const victim = s.schedule[idx].teamA[0]; // someone in the current match
+
+  s = removePlayer(s, victim);
+
+  // Pending rounds no longer reference the removed player.
+  for (let i = idx; i < s.schedule.length; i++) {
+    const r = s.schedule[i];
+    assert.ok(!r.teamA.includes(victim) && !r.teamB.includes(victim));
+  }
+  // Completed round keeps them (history is the record of who actually played).
+  assert.ok([...s.schedule[0].teamA, ...s.schedule[0].teamB].includes(victim));
+
+  // Reoptimizing from the current round must not throw on the purged maps.
+  const rng = createRng((s.seed + 2000) >>> 0);
+  const reopt = reoptimizeFrom(s, idx, s.weights, rng);
+  assert.ok(!reopt[idx].teamA.includes(victim) && !reopt[idx].teamB.includes(victim));
 });
 
 test('createSession defaults to 30 rounds when targetRounds is omitted', () => {

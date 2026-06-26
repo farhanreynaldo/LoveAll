@@ -27,7 +27,9 @@ export function renderLive(root, go, session) {
   }
 
   function playerName(id) {
-    return state.players.find(p => p.id === id)?.name ?? id;
+    return state.players.find(p => p.id === id)?.name
+      ?? state.removedPlayers?.find(p => p.id === id)?.name
+      ?? id;
   }
 
   function persist() {
@@ -322,7 +324,7 @@ export function renderLive(root, go, session) {
         </div>
         ${tooFew ? `<p class="sheet-hint">Need at least 4 players. Add someone first.</p>` : ''}
         ${pending ? `
-          <p class="sheet-hint">Remove <strong>${escapeHtml(pending.name)}</strong>? Their stats will be dropped from this session.</p>
+          <p class="sheet-hint">Remove <strong>${escapeHtml(pending.name)}</strong>? They'll leave the current match and upcoming rounds will reshuffle. Their completed games stay in the history; their running stats are dropped.</p>
           <div class="sheet-actions">
             <button class="btn ghost small" id="remove-cancel">Cancel</button>
             <button class="btn small" id="remove-confirm">Remove</button>
@@ -442,10 +444,16 @@ export function renderLive(root, go, session) {
       if (confirmBtn) {
         confirmBtn.onclick = () => {
           if (!pendingRemoveId || state.players.length <= 4) return;
-          state = removePlayer(state, pendingRemoveId);
           const idx = currentRoundIndex();
+          const current = state.schedule[idx];
+          // Only disturb the active match if the removed player is in it; if
+          // they were resting, leave the current round (and any in-progress
+          // score) untouched and reshuffle only upcoming rounds.
+          const inCurrent = current
+            && (current.teamA.includes(pendingRemoveId) || current.teamB.includes(pendingRemoveId));
+          state = removePlayer(state, pendingRemoveId);
           const rng = createRng((state.seed + 2000) >>> 0);
-          const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
+          const reopt = reoptimizeFrom(state, inCurrent ? idx : idx + 1, state.weights, rng);
           state = { ...state, schedule: reopt };
           persist();
           closeMenu();

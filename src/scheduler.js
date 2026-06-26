@@ -63,9 +63,17 @@ export function simulate(state, candidate) {
   const roundsPlayed = { ...state.roundsPlayed };
 
   const onCourt = [...candidate.teamA, ...candidate.teamB];
-  for (const p of onCourt) roundsPlayed[p] = (roundsPlayed[p] ?? 0) + 1;
+  // A completed round can reference a player who was later removed mid-session;
+  // their stat/count maps are gone. Skip those ids so replaying history to
+  // rebuild counts doesn't dereference a missing entry (they no longer count).
+  for (const p of onCourt) {
+    if (p in roundsPlayed) roundsPlayed[p] += 1;
+  }
 
-  const inc = (map, x, y) => { map[x][y] = (map[x][y] ?? 0) + 1; };
+  const inc = (map, x, y) => {
+    if (!map[x]) return;
+    map[x][y] = (map[x][y] ?? 0) + 1;
+  };
   for (const team of [candidate.teamA, candidate.teamB]) {
     for (let i = 0; i < team.length; i++) {
       for (let j = i + 1; j < team.length; j++) {

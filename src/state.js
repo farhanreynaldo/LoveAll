@@ -40,6 +40,10 @@ export function createSession({ players, targetRounds = 30, seed = Date.now() >>
     startedAt: Date.now(),
     schedule: [],
     darkMode: false,
+    // Names of players removed mid-session are retained here so historical
+    // rounds (which legitimately reference them) can still resolve a real
+    // name instead of falling back to a raw id.
+    removedPlayers: [],
   };
   // generateSchedule requires state.players to be a list of player IDs (not full objects).
   // Pass a temporary shape with `players` as ids for scheduling purposes only.
@@ -139,6 +143,12 @@ export function addPlayer(state, player) {
 
 export function removePlayer(state, playerId) {
   const next = structuredClone(state);
+  // Retain the removed player's name before dropping them, so completed
+  // rounds that still reference this id resolve to a name, not "p7".
+  const removed = next.players.find(p => p.id === playerId);
+  if (removed) {
+    next.removedPlayers = [...(next.removedPlayers ?? []), { id: removed.id, name: removed.name }];
+  }
   next.players = next.players.filter(p => p.id !== playerId);
   delete next.elo[playerId];
   delete next.roundsPlayed[playerId];
@@ -151,6 +161,20 @@ export function removePlayer(state, playerId) {
   for (const other of next.players) {
     delete next.partnerCounts[other.id][playerId];
     delete next.opponentCounts[other.id][playerId];
+  }
+  // Scrub the player from any pending round that still has them slotted in.
+  // Completed rounds are history and stay intact (their name resolves via
+  // removedPlayers). Pending rounds are cleared to tentative so the caller's
+  // reoptimize regenerates them fresh, without the departed player.
+  for (const r of next.schedule) {
+    if (r.status === 'completed') continue;
+    if (r.teamA.includes(playerId) || r.teamB.includes(playerId)) {
+      r.teamA = [];
+      r.teamB = [];
+      r.status = 'tentative';
+      r.score = null;
+      r.manuallyEdited = false;
+    }
   }
   return next;
 }
