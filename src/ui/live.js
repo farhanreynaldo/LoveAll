@@ -120,13 +120,8 @@ export function renderLive(root, go, session) {
         Save &amp; next round →
       </button>
       <div class="inline-action-row">
-        <button class="text-link quiet" id="skip-round-link" type="button">
-          Skip this round
-        </button>
-        <span class="schedule-hint-sep" aria-hidden="true">·</span>
-        <button class="text-link" id="end-session-link" type="button">
-          End session &amp; see results
-        </button>
+        <button class="text-link quiet" id="skip-round-link" type="button">Skip this round</button>
+        <button class="text-link quiet" id="end-session-link" type="button">End session</button>
       </div>
 
       ${fullList.length > 0 ? `
