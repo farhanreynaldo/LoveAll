@@ -46,3 +46,19 @@ test('updateElo handles 0-0 (skipped/aborted round) gracefully', () => {
   const next = updateElo(r, ['a1','a2'], ['b1','b2'], 0, 0, 32);
   assert.deepEqual(next, r);
 });
+
+test('singles: 1v1 update moves winner up and loser down by equal magnitude', () => {
+  const ratings = { a: 1300, b: 1300 };
+  const next = updateElo(ratings, ['a'], ['b'], 6, 2, 32);
+  assert.ok(next.a > 1300, 'winner a rises');
+  assert.ok(next.b < 1300, 'loser b drops');
+  // equal ratings, so symmetric: gain == loss
+  assert.ok(Math.abs((next.a - 1300) + (next.b - 1300)) < 1e-9);
+});
+
+test('singles: update does not mutate input ratings', () => {
+  const ratings = { a: 1300, b: 1300 };
+  updateElo(ratings, ['a'], ['b'], 6, 0, 32);
+  assert.equal(ratings.a, 1300);
+  assert.equal(ratings.b, 1300);
+});
