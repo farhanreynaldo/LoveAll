@@ -68,3 +68,32 @@ test('skill_penalty fires on unbalanced teams', () => {
   const c = computeCost(candidate, state, DEFAULT_WEIGHTS);
   assert.equal(c, 64);
 });
+
+test('singles: partner penalty is zero (teams of one have no within-team pair)', () => {
+  const state = blankState(['a','b','c','d']);
+  // even with a bogus partner count present, a 1-player team can't pair within itself
+  state.partnerCounts.a.b = 5;
+  state.partnerCounts.b.a = 5;
+  const candidate = { teamA: ['a'], teamB: ['b'] };
+  const c = computeCost(candidate, state, DEFAULT_WEIGHTS);
+  assert.equal(c, 0);
+});
+
+test('singles: opponent penalty counts the single cross pair', () => {
+  const state = blankState(['a','b','c','d']);
+  state.opponentCounts.a.b = 2;
+  state.opponentCounts.b.a = 2;
+  const candidate = { teamA: ['a'], teamB: ['b'] };
+  const c = computeCost(candidate, state, DEFAULT_WEIGHTS);
+  assert.equal(c, DEFAULT_WEIGHTS.opponent * 4); // 2^2 = 4, weight 8 -> 32
+});
+
+test('singles: skill penalty uses each player\'s single Elo', () => {
+  const state = blankState(['a','b','c','d']);
+  state.elo.a = 1500;
+  state.elo.b = 1100;
+  const candidate = { teamA: ['a'], teamB: ['b'] };
+  const c = computeCost(candidate, state, DEFAULT_WEIGHTS);
+  // diff = (1500 - 1100)/100 = 4 -> 16, weight 1
+  assert.equal(c, 16);
+});
