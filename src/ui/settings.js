@@ -1,22 +1,43 @@
 import { reoptimizeFrom } from '../scheduler.js';
 import { createRng } from '../rng.js';
 import { saveSession } from '../persistence.js';
+import { FAIRNESS_PRESETS, presetWeights } from '../presets.js';
+
+const PRESET_COPY = {
+  balanced: {
+    doubles: 'Fair rest, varied pairings, even teams.',
+    singles: 'Fair rest, varied opponents, even matches.',
+  },
+  variety: {
+    doubles: 'Play with and against as many different people as possible.',
+    singles: 'Play against as many different people as possible.',
+  },
+  even: {
+    doubles: 'Prioritize closely-matched, competitive games.',
+    singles: 'Prioritize closely-matched, competitive games.',
+  },
+};
 
 export function renderSettings(root, go, session) {
   let state = session;
-  // Local draft mirrors current state values
-  const draft = {
-    rest:     state.weights.rest,
-    partner:  state.weights.partner,
-    opponent: state.weights.opponent,
-    skill:    state.weights.skill,
-    k:        state.k,
-  };
+  let selected = state.fairnessPreset ?? 'balanced';
+  const fmt = state.format === 'singles' ? 'singles' : 'doubles';
 
   function render() {
+    const options = Object.values(FAIRNESS_PRESETS).map(p => {
+      const isOn = selected === p.key;
+      return `
+        <button type="button" class="preset-option ${isOn ? 'is-active' : ''}"
+          role="radio" aria-checked="${isOn}" data-preset="${p.key}">
+          <span class="preset-name">${p.label}</span>
+          <span class="preset-desc">${PRESET_COPY[p.key][fmt]}</span>
+        </button>
+      `;
+    }).join('');
+
     root.innerHTML = `
       <div class="screen-header">
-        <div class="title">Fairness settings</div>
+        <div class="title">Fairness</div>
         <div class="header-actions">
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
           <button class="icon-btn" id="back-btn" aria-label="back">×</button>
@@ -24,69 +45,31 @@ export function renderSettings(root, go, session) {
       </div>
 
       <p style="color:var(--text-secondary); font-size:var(--text-meta); margin: 0 0 16px;">
-        These weights control how the scheduler picks each round.
-        Larger weights mean stronger penalties for unfairness on that dimension.
-        Changes re-optimize the remaining schedule immediately.
+        Choose what the shuffler should optimise for. Changes re-optimize the remaining rounds.
       </p>
 
-      <div class="label">Cost-function weights</div>
-      <div class="card">
-        ${weightRow('rest', 'Rest equality', 'Penalty for playing again before others. Effectively a hard constraint at the default value.')}
-        ${weightRow('partner', 'Partner variety', 'Penalty for repeating partners.')}
-        ${weightRow('opponent', 'Opponent variety', 'Penalty for repeating opponents.')}
-        ${weightRow('skill', 'Skill balance', 'Penalty for lopsided team Elo. Tiebreaker only at the default value.')}
+      <div class="preset-list" role="radiogroup" aria-label="Fairness preset">
+        ${options}
       </div>
 
-      <div class="label">Elo K-factor</div>
-      <div class="card">
-        ${weightRow('k', 'K (rating sensitivity)', 'Higher K = ratings move faster after each match. 32 is standard.')}
-      </div>
-
-      <button class="btn ghost small" id="reset-btn" style="margin-top:12px;">Reset to defaults</button>
-      <button class="btn" id="save-btn" style="margin-top:8px;">Save &amp; re-optimize</button>
+      <button class="btn" id="save-btn" style="margin-top:16px;">Save &amp; re-optimize</button>
     `;
     bind();
-  }
-
-  function weightRow(key, label, hint) {
-    return `
-      <div class="setting-row">
-        <div class="setting-meta">
-          <div class="setting-name">${label}</div>
-          <div class="setting-hint">${hint}</div>
-        </div>
-        <input type="number" class="setting-input" data-key="${key}" value="${draft[key]}" min="0" step="${key === 'k' ? '1' : 'any'}" />
-      </div>
-    `;
   }
 
   function bind() {
     root.querySelector('#back-btn').onclick = () => go('live', state);
 
-    root.querySelectorAll('.setting-input').forEach(inp => {
-      inp.oninput = e => {
-        const key = e.target.dataset.key;
-        const v = parseFloat(e.target.value);
-        if (!Number.isNaN(v) && v >= 0) draft[key] = v;
-      };
+    root.querySelectorAll('.preset-option[data-preset]').forEach(btn => {
+      btn.onclick = () => { selected = btn.dataset.preset; render(); };
     });
-
-    root.querySelector('#reset-btn').onclick = () => {
-      draft.rest = 1000;
-      draft.partner = 10;
-      draft.opponent = 8;
-      draft.skill = 1;
-      draft.k = 32;
-      render();
-    };
 
     root.querySelector('#save-btn').onclick = () => {
       state = {
         ...state,
-        weights: { rest: draft.rest, partner: draft.partner, opponent: draft.opponent, skill: draft.skill },
-        k: draft.k,
+        fairnessPreset: selected,
+        weights: presetWeights(selected),
       };
-      // Re-optimize unlocked rounds from the first non-(completed|skipped|locked) round
       const firstUnlocked = state.schedule.findIndex(r => r.status === 'tentative');
       if (firstUnlocked >= 0) {
         const rng = createRng((state.seed + 9000) >>> 0);

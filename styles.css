@@ -1004,3 +1004,37 @@ input.edit-score-input {
 
 .leader-row.clickable { cursor: pointer; }
 .leader-row.clickable:active { background: var(--border-soft); }
+
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.preset-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 14px 16px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.preset-option.is-active {
+  border-color: var(--text);
+  background: var(--border-soft);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--text);
+}
+.preset-name {
+  font-size: var(--text-control);
+}
+.preset-desc {
+  font-size: var(--text-meta);
+  color: var(--text-secondary);
+  font-weight: 400;
+}
