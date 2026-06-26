@@ -123,6 +123,10 @@ export function renderLive(root, go, session) {
         <button class="text-link quiet" id="skip-round-link" type="button">
           Skip this round
         </button>
+        <span class="schedule-hint-sep" aria-hidden="true">·</span>
+        <button class="text-link" id="end-session-link" type="button">
+          End session &amp; see results
+        </button>
       </div>
 
       ${fullList.length > 0 ? `
@@ -561,6 +565,10 @@ export function renderLive(root, go, session) {
     // End session button on completed screen
     const endFinalBtn = root.querySelector('#end-session-final');
     if (endFinalBtn) endFinalBtn.onclick = () => go('summary', state);
+
+    // End session from the normal live screen, mid-session (no need to exhaust all rounds)
+    const endLink = root.querySelector('#end-session-link');
+    if (endLink) endLink.onclick = () => go('summary', state);
 
     if (menuOpen) bindMenu();
 
