@@ -18,9 +18,16 @@ export function updateElo(ratings, teamA, teamB, gamesA, gamesB, k = 32) {
   const total = gamesA + gamesB;
   if (total === 0) return next;
 
-  const avg = team => team.reduce((s, id) => s + ratings[id], 0) / team.length;
+  // Average only over teammates whose rating is defined (tolerates removed players).
+  const avg = team => {
+    const known = team.filter(id => ratings[id] != null);
+    return known.length ? known.reduce((s, id) => s + ratings[id], 0) / known.length : null;
+  };
   const rA = avg(teamA);
   const rB = avg(teamB);
+
+  // If either team is entirely untracked, we cannot compute expected scores.
+  if (rA === null || rB === null) return next;
 
   const eA = expectedScore(rA, rB);
   const eB = 1 - eA;
@@ -31,8 +38,9 @@ export function updateElo(ratings, teamA, teamB, gamesA, gamesB, k = 32) {
   const deltaA = k * (sA - eA);
   const deltaB = k * (sB - eB);
 
-  for (const id of teamA) next[id] += deltaA;
-  for (const id of teamB) next[id] += deltaB;
+  // Only update ids still present in the ratings map.
+  for (const id of teamA) if (id in next) next[id] += deltaA;
+  for (const id of teamB) if (id in next) next[id] += deltaB;
 
   return next;
 }

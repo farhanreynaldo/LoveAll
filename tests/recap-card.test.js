@@ -30,6 +30,7 @@ test('buildStandings ranks by wins then game differential', () => {
   assert.deepEqual(ranked.map(e => e.id), ['a', 'b', 'c', 'd']); // c beats d on diff (+3 vs +1)
   assert.equal(ranked[0].gameDiff, 14);
   assert.equal(ranked[3].gameDiff, 1);
+  assert.deepEqual(ranked[0], { id: 'a', name: 'Priya', wins: 5, losses: 1, gameDiff: 14 });
 });
 
 test('buildStandings splits podium (top 3) from the rest', () => {

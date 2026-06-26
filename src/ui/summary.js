@@ -10,7 +10,7 @@ export function renderSummary(root, go, session) {
   const elapsedMin = Math.round((Date.now() - state.startedAt) / 60000);
   const completedRounds = state.schedule.filter(r => r.status === 'completed').length;
 
-  const { ranked, podium } = buildStandings(state);
+  const { ranked } = buildStandings(state);
   const leaderboard = ranked;
 
   const roundsRange = (() => {
@@ -213,7 +213,7 @@ async function shareRanking(ctx, btn) {
 
   const file = new File([blob], 'loveall-ranking.png', { type: 'image/png' });
 
-  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title, text });
       return;

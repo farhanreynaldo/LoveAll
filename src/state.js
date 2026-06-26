@@ -77,11 +77,15 @@ export function applyScore(state, roundIndex, gamesA, gamesB) {
   next.opponentCounts = sim.opponentCounts;
 
   if (winners && losers) {
-    for (const id of winners) next.wins[id] += 1;
-    for (const id of losers)  next.losses[id] += 1;
+    for (const id of winners) if (id in next.wins)   next.wins[id]   += 1;
+    for (const id of losers)  if (id in next.losses) next.losses[id] += 1;
   }
-  for (const id of r.teamA) { next.gamesFor[id] += gamesA; next.gamesAgainst[id] += gamesB; }
-  for (const id of r.teamB) { next.gamesFor[id] += gamesB; next.gamesAgainst[id] += gamesA; }
+  for (const id of r.teamA) {
+    if (id in next.gamesFor) { next.gamesFor[id] += gamesA; next.gamesAgainst[id] += gamesB; }
+  }
+  for (const id of r.teamB) {
+    if (id in next.gamesFor) { next.gamesFor[id] += gamesB; next.gamesAgainst[id] += gamesA; }
+  }
 
   next.elo = updateElo(next.elo, r.teamA, r.teamB, gamesA, gamesB, next.k);
 

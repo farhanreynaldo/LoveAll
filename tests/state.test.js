@@ -115,6 +115,26 @@ test('removePlayer scrubs pending rounds and reoptimize replays history without 
   assert.ok(!reopt[idx].teamA.includes(victim) && !reopt[idx].teamB.includes(victim));
 });
 
+test('removePlayer then recomputeFromCompleted does not NaN-poison survivors and reoptimize does not throw', () => {
+  // Regression: applyScore re-applied a completed round that referenced a
+  // removed player; undefined stats + elo produced NaN that spread to survivors.
+  let s = createSession({ players: PLAYERS, targetRounds: 6, seed: 7 });
+  s = applyScore(s, 0, 6, 2);
+  const victim = s.schedule[0].teamA[0];
+  s = removePlayer(s, victim);
+  s = recomputeFromCompleted(s);
+  // No survivor Elo value should be NaN.
+  for (const [id, val] of Object.entries(s.elo)) {
+    assert.ok(!Number.isNaN(val), `s.elo[${id}] is NaN after recomputeFromCompleted`);
+  }
+  // The removed player's wins key should be absent (undefined), not NaN.
+  assert.equal(s.wins[victim], undefined, `s.wins[${victim}] should be undefined, not NaN`);
+  // Reoptimizing from round 1 should not throw.
+  assert.doesNotThrow(() => {
+    reoptimizeFrom(s, 1, s.weights, createRng(1));
+  });
+});
+
 test('createSession defaults to 30 rounds when targetRounds is omitted', () => {
   const s = createSession({ players: PLAYERS, seed: 1 });
   assert.equal(s.schedule.length, 30);
