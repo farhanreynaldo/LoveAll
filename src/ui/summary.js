@@ -1,4 +1,5 @@
 import { clearSession } from '../persistence.js';
+import { buildStandings, formatDiff } from '../recap-card.js';
 
 export function renderSummary(root, go, session) {
   const state = session;
@@ -9,11 +10,8 @@ export function renderSummary(root, go, session) {
   const elapsedMin = Math.round((Date.now() - state.startedAt) / 60000);
   const completedRounds = state.schedule.filter(r => r.status === 'completed').length;
 
-  const leaderboard = [...state.players].sort((a, b) => {
-    const wb = state.wins[b.id] - state.wins[a.id];
-    if (wb !== 0) return wb;
-    return (state.gamesFor[b.id] - state.gamesAgainst[b.id]) - (state.gamesFor[a.id] - state.gamesAgainst[a.id]);
-  });
+  const { ranked, podium } = buildStandings(state);
+  const leaderboard = ranked;
 
   const roundsRange = (() => {
     const vals = Object.values(state.roundsPlayed);
@@ -31,6 +29,7 @@ export function renderSummary(root, go, session) {
 
   const champion = leaderboard[0];
   const dateLine = formatDateLine(state.startedAt);
+
   const mostPlayedPair = isSingles ? null : findMostPlayedPair(state);
   const closestMatch = findClosestMatch(state);
 
@@ -39,7 +38,6 @@ export function renderSummary(root, go, session) {
       <div class="title">Session complete</div>
       <div class="header-actions">
         <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
-        <button class="icon-btn" id="close-btn" aria-label="close">×</button>
       </div>
     </div>
 
@@ -61,22 +59,17 @@ export function renderSummary(root, go, session) {
       </div>
 
       <ol class="roll" aria-label="final standings">
-        ${leaderboard.map((p, i) => {
-          const gf = state.gamesFor[p.id] ?? 0;
-          const ga = state.gamesAgainst[p.id] ?? 0;
-          return `
+        ${leaderboard.map((p, i) => `
             <li class="roll-row${i === 0 ? ' is-leader' : ''}" data-player-id="${p.id}">
               <span class="roll-rank">${i + 1}</span>
-              <span class="roll-body">
-                <span class="roll-name">${escapeHtml(p.name)}</span>
-                <span class="roll-meta">${gf}–${ga} games · ${state.roundsPlayed[p.id] ?? 0} rounds</span>
+              <span class="roll-name">${escapeHtml(p.name)}</span>
+              <span class="roll-record">
+                <span class="roll-wl">${p.wins}–${p.losses}</span>
+                <span class="roll-diff">${formatDiff(p.gameDiff)}</span>
               </span>
-              <span class="roll-wl">
-                <span class="roll-w">${state.wins[p.id]}</span><span class="roll-sep">·</span><span class="roll-l">${state.losses[p.id]}</span>
-              </span>
+              <span class="roll-chevron" aria-hidden="true">›</span>
             </li>
-          `;
-        }).join('')}
+        `).join('')}
       </ol>
 
       ${(mostPlayedPair || closestMatch) ? `
@@ -105,23 +98,36 @@ export function renderSummary(root, go, session) {
 
     </article>
 
-    <div class="recap-actions">
-      <button class="btn" id="share-btn" type="button">Share the ranking</button>
-      <button class="btn ghost" id="new-btn" type="button">New session</button>
-    </div>
+      <div class="recap-actions" id="recap-actions"></div>
   `;
 
-  root.querySelector('#close-btn').onclick = () => {
-    clearSession();
-    go('setup');
-  };
-  root.querySelector('#new-btn').onclick = () => {
-    clearSession();
-    go('setup');
-  };
-  root.querySelector('#share-btn').onclick = () => shareRanking({
-    leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champion,
-  }, root.querySelector('#share-btn'));
+  const actions = root.querySelector('#recap-actions');
+
+  function wireShare() {
+    root.querySelector('#share-btn').onclick = () => shareRanking({
+      leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champion,
+    }, root.querySelector('#share-btn'));
+  }
+
+  function showActions() {
+    actions.innerHTML = `
+      <button class="btn" id="share-btn" type="button">Share the ranking</button>
+      <button class="btn ghost" id="new-btn" type="button">New session</button>`;
+    wireShare();
+    root.querySelector('#new-btn').onclick = showConfirm;
+  }
+
+  function showConfirm() {
+    actions.innerHTML = `
+      <p class="recap-confirm" role="status">Start a new session? This clears today's recap.</p>
+      <button class="btn" id="confirm-new" type="button">Clear and start</button>
+      <button class="btn ghost" id="cancel-new" type="button">Cancel</button>`;
+    root.querySelector('#confirm-new').onclick = () => { clearSession(); go('setup'); };
+    root.querySelector('#cancel-new').onclick = showActions;
+  }
+
+  showActions();
+
   root.querySelectorAll('.roll-row').forEach(el => {
     el.onclick = () => go('player', state, el.dataset.playerId);
   });
