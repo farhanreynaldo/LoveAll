@@ -2,6 +2,7 @@ import { clearSession } from '../persistence.js';
 
 export function renderSummary(root, go, session) {
   const state = session;
+  const isSingles = state.format === 'singles';
   const totalGames = state.schedule
     .filter(r => r.score)
     .reduce((acc, r) => acc + r.score[0] + r.score[1], 0);
@@ -30,7 +31,7 @@ export function renderSummary(root, go, session) {
 
   const champion = leaderboard[0];
   const dateLine = formatDateLine(state.startedAt);
-  const mostPlayedPair = findMostPlayedPair(state);
+  const mostPlayedPair = isSingles ? null : findMostPlayedPair(state);
   const closestMatch = findClosestMatch(state);
 
   root.innerHTML = `
@@ -95,10 +96,11 @@ export function renderSummary(root, go, session) {
             <span class="recap-note-label">Fairness</span>
             <span class="recap-note-body">${roundsRange[0]}–${roundsRange[1]} rounds per player ${roundsRange[1] - roundsRange[0] <= 1 ? '· evenly spread' : ''}</span>
           </div>
+          ${isSingles ? '' : `
           <div class="recap-note">
             <span class="recap-note-label">Partners</span>
             <span class="recap-note-body">avg ${avgUniquePartners} of ${state.players.length - 1} possible</span>
-          </div>
+          </div>`}
         </section>` : ''}
 
     </article>
