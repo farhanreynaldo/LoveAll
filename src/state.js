@@ -1,6 +1,6 @@
 import { seedElo, updateElo } from './elo.js';
 import { simulate, generateSchedule } from './scheduler.js';
-import { DEFAULT_WEIGHTS } from './cost.js';
+import { presetWeights } from './presets.js';
 import { createRng } from './rng.js';
 
 function blankCounts(playerIds) {
@@ -18,15 +18,17 @@ function blankPerPlayer(playerIds, value) {
   return out;
 }
 
-export function createSession({ players, targetRounds = 30, seed = Date.now() >>> 0, weights = DEFAULT_WEIGHTS, k = 32, format = 'doubles' }) {
+export function createSession({ players, targetRounds = 30, seed = Date.now() >>> 0, weights, k = 32, format = 'doubles', fairnessPreset = 'balanced' }) {
+  const resolvedWeights = weights ?? presetWeights(fairnessPreset);
   const ids = players.map(p => p.id);
   const state = {
     players,
     targetRounds,
     seed,
-    weights,
+    weights: resolvedWeights,
     k,
     format,
+    fairnessPreset,
     elo: Object.fromEntries(players.map(p => [p.id, seedElo(p.seedSkill)])),
     roundsPlayed: blankPerPlayer(ids, 0),
     partnerCounts: blankCounts(ids),
@@ -43,7 +45,7 @@ export function createSession({ players, targetRounds = 30, seed = Date.now() >>
   // Pass a temporary shape with `players` as ids for scheduling purposes only.
   const schedulingState = { ...state, players: ids };
   const rng = createRng(seed);
-  const tentative = generateSchedule(schedulingState, targetRounds, weights, rng);
+  const tentative = generateSchedule(schedulingState, targetRounds, resolvedWeights, rng);
   state.schedule = tentative.map(c => ({
     teamA: c.teamA, teamB: c.teamB,
     status: 'tentative', score: null, manuallyEdited: false,
@@ -93,6 +95,7 @@ export function recomputeFromCompleted(state) {
     weights: state.weights,
     k: state.k,
     format: state.format ?? 'doubles',
+    fairnessPreset: state.fairnessPreset ?? 'balanced',
   });
   // Overwrite the freshly-generated schedule with the existing one, but reset
   // each round's status/score; we will re-apply scores below.

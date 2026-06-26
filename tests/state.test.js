@@ -109,3 +109,27 @@ test('createSession with format singles schedules 1v1 rounds', () => {
   assert.equal(s.schedule[0].teamA.length, 1);
   assert.equal(s.schedule[0].teamB.length, 1);
 });
+
+test('createSession defaults fairnessPreset to balanced with default weights (back-compat)', () => {
+  const players = [
+    { id: 'a', name: 'A', seedSkill: 2 },
+    { id: 'b', name: 'B', seedSkill: 2 },
+    { id: 'c', name: 'C', seedSkill: 2 },
+    { id: 'd', name: 'D', seedSkill: 2 },
+  ];
+  const s = createSession({ players, targetRounds: 1, seed: 1 });
+  assert.equal(s.fairnessPreset, 'balanced');
+  assert.equal(s.weights.skill, 1);
+});
+
+test('createSession with fairnessPreset even derives boosted skill weight', () => {
+  const players = [
+    { id: 'a', name: 'A', seedSkill: 2 },
+    { id: 'b', name: 'B', seedSkill: 2 },
+    { id: 'c', name: 'C', seedSkill: 2 },
+    { id: 'd', name: 'D', seedSkill: 2 },
+  ];
+  const s = createSession({ players, targetRounds: 1, seed: 1, fairnessPreset: 'even' });
+  assert.equal(s.fairnessPreset, 'even');
+  assert.ok(s.weights.skill > 1);
+});
