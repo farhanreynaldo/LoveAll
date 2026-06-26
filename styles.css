@@ -248,14 +248,6 @@ input.player-name:focus-visible {
 }
 
 /* Roster row siblings around the name input. */
-.roster-row .roster-skill-label {
-  font-size: var(--text-label);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  white-space: nowrap;
-  flex: 0 0 auto;
-}
 .roster-row .skill-dots {
   cursor: pointer;
   align-items: center;
@@ -1053,10 +1045,63 @@ input.edit-score-input {
   min-height: 44px;
   font-size: var(--text-meta);
 }
-.roster-row .skill-seg {
-  flex: 1 1 140px;
+/* Single-line roster entry: the name flexes and the compact skill pill plus
+   remove button sit to its right. The pill is narrow (one word) so even long
+   names keep their room; no truncation in normal use, no second line. */
+.roster-row .player-name { flex: 1 1 auto; min-width: 0; }
+
+/* Tap-to-cycle skill pill: shows the current level, advances low -> mid ->
+   high on tap. A fixed min-width keeps the row from shifting as the word
+   changes length. */
+.skill-pill {
+  flex: 0 0 auto;
+  min-width: 60px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-control);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 160ms ease-out;
 }
-.roster-row { flex-wrap: wrap; row-gap: 6px; }
+.skill-pill:active { background: var(--border-soft); }
+.skill-pill:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 50%, transparent);
+}
+
+/* Undo affordance after removing a roster entry: names who left and offers a
+   one-tap reversal, so the remove isn't a silent, unrecoverable splice. */
+.undo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: var(--text-meta);
+  color: var(--text-secondary);
+}
+.undo-btn {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-control);
+  font-weight: 600;
+  cursor: pointer;
+}
 
 .lock-toggle {
   display: grid;

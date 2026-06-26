@@ -8,20 +8,18 @@ export function renderSetup(root, go) {
   const players = [];
   let nextIdCounter = 1;
   let format = 'doubles';
+  let lastRemoved = null;  // { player, idx } of the most recent removal, for undo
   const lastRoster = loadLastRoster();
 
   function genId() { return `p${nextIdCounter++}`; }
   function minPlayers() { return MIN_BY_FORMAT[format]; }
 
   const SKILL_LABELS = { 1: 'Low', 2: 'Mid', 3: 'High' };
-  function skillSeg(current, idx) {
-    return `
-      <div class="segmented compact skill-seg" role="radiogroup" aria-label="Skill level" data-idx="${idx}">
-        ${[1, 2, 3].map(n =>
-          `<button type="button" class="segment ${current === n ? 'is-active' : ''}" role="radio" aria-checked="${current === n}" data-skill="${n}">${SKILL_LABELS[n]}</button>`
-        ).join('')}
-      </div>
-    `;
+  // A single pill that shows the current skill and cycles low -> mid -> high
+  // on tap. Compact enough to sit on the name's line without truncating it.
+  function skillPill(current, idx) {
+    const label = SKILL_LABELS[current] ?? 'Mid';
+    return `<button type="button" class="skill-pill" data-idx="${idx}" aria-label="Skill: ${label}. Tap to change.">${label}</button>`;
   }
 
   function render() {
@@ -58,15 +56,21 @@ export function renderSetup(root, go) {
         </button>
       ` : ''}
 
+      ${lastRemoved ? `
+        <div class="undo-banner" role="status">
+          <span>Removed ${escapeHtml(lastRemoved.player.name)}.</span>
+          <button type="button" class="undo-btn" id="undo-remove">Undo</button>
+        </div>
+      ` : ''}
+
       ${players.length > 0 ? `
-        <p class="roster-hint">Set each player's skill: low, mid, or high.</p>
+        <p class="roster-hint">Tap a player's skill to cycle low, mid, high.</p>
         <div class="card" style="padding:4px 12px;">
           ${players.map((p, i) => `
             <div class="row roster-row" data-idx="${i}">
               <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}" />
-              <span class="roster-skill-label">Skill</span>
-              ${skillSeg(p.seedSkill, i)}
-              <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove">×</button>
+              ${skillPill(p.seedSkill, i)}
+              <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove ${escapeHtml(p.name)}">×</button>
             </div>
           `).join('')}
         </div>
@@ -86,6 +90,7 @@ export function renderSetup(root, go) {
       const name = input.value.trim();
       if (!name || players.length >= MAX_PLAYERS) return;
       players.push({ id: genId(), name, seedSkill: 2 });
+      lastRemoved = null;
       input.value = '';
       render();
       root.querySelector('#new-name').focus();
@@ -97,21 +102,37 @@ export function renderSetup(root, go) {
       };
     });
 
-    root.querySelectorAll('.skill-seg').forEach(seg => {
-      seg.onclick = e => {
-        const btn = e.target.closest('.segment[data-skill]');
-        if (!btn) return;
-        players[+seg.dataset.idx].seedSkill = +btn.dataset.skill;
-        render();
+    // Skill pill cycles low -> mid -> high in place (no re-render), so the
+    // tap lands instantly and any in-progress name edit isn't disturbed.
+    root.querySelectorAll('.skill-pill').forEach(btn => {
+      btn.onclick = () => {
+        const i = +btn.dataset.idx;
+        const next = (players[i].seedSkill % 3) + 1;
+        players[i].seedSkill = next;
+        const label = SKILL_LABELS[next];
+        btn.textContent = label;
+        btn.setAttribute('aria-label', `Skill: ${label}. Tap to change.`);
       };
     });
 
     root.querySelectorAll('.remove-btn').forEach(btn => {
       btn.onclick = () => {
-        players.splice(+btn.dataset.idx, 1);
+        const idx = +btn.dataset.idx;
+        lastRemoved = { player: players[idx], idx };
+        players.splice(idx, 1);
         render();
       };
     });
+
+    const undoBtn = root.querySelector('#undo-remove');
+    if (undoBtn) {
+      undoBtn.onclick = () => {
+        const { player, idx } = lastRemoved;
+        players.splice(Math.min(idx, players.length), 0, player);
+        lastRemoved = null;
+        render();
+      };
+    }
 
     root.querySelectorAll('.segment[data-format]').forEach(seg => {
       seg.onclick = () => {
@@ -129,6 +150,7 @@ export function renderSetup(root, go) {
             players.push({ id: genId(), name: p.name, seedSkill: skillRemap[p.seedSkill] ?? 2 });
           }
         }
+        lastRemoved = null;
         render();
       };
     }
