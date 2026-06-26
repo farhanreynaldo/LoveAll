@@ -1,5 +1,5 @@
 import { clearSession } from '../persistence.js';
-import { buildStandings, formatDiff } from '../recap-card.js';
+import { buildStandings, formatDiff, renderRecapCard } from '../recap-card.js';
 
 export function renderSummary(root, go, session) {
   const state = session;
@@ -203,19 +203,37 @@ async function shareRanking(ctx, btn) {
   const text = lines.join('\n');
   const title = `LoveAll — ${firstName(champion.name)} wins the session`;
 
+  let blob;
   try {
-    if (navigator.share) {
-      await navigator.share({ title, text });
-      return;
-    }
-  } catch (err) {
-    if (err && err.name === 'AbortError') return;
+    blob = await renderRecapCard(state);
+  } catch {
+    flashLabel(btn, 'Could not build image');
+    return;
   }
+
+  const file = new File([blob], 'loveall-ranking.png', { type: 'image/png' });
+
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title, text });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+  // Fallback: download the image, copy the text.
+  try {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'loveall-ranking.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch { /* download unavailable; still try clipboard */ }
   try {
     await navigator.clipboard.writeText(text);
-    flashLabel(btn, 'Copied to clipboard');
+    flashLabel(btn, 'Image saved · text copied');
   } catch {
-    flashLabel(btn, 'Copy failed — long-press to share');
+    flashLabel(btn, 'Image saved');
   }
 }
 
