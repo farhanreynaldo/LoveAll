@@ -282,8 +282,8 @@ export function renderLive(root, go, session) {
   }
 
   function addViewHtml() {
-    const dots = [1,2,3].map(n =>
-      `<span class="dot ${addDraft.skill >= n ? 'filled' : ''}" data-add-skill="${n}"></span>`
+    const skillSeg = [1,2,3].map(n =>
+      `<button type="button" class="segment ${addDraft.skill === n ? 'is-active' : ''}" role="radio" aria-checked="${addDraft.skill === n}" data-add-skill="${n}">${({1:'Low',2:'Mid',3:'High'})[n]}</button>`
     ).join('');
     const atMax = state.players.length >= 12;
     return `
@@ -296,7 +296,7 @@ export function renderLive(root, go, session) {
         <input type="text" id="add-name" placeholder="Player name" value="${escapeHtml(addDraft.name)}" autocomplete="off" ${atMax ? 'disabled' : ''} />
         <div class="sheet-row">
           <span class="sheet-row-label">Skill</span>
-          <div class="skill-dots" id="add-skill-dots" style="cursor:pointer;align-items:center;">${dots}</div>
+          <div class="segmented compact skill-seg" id="add-skill-seg" role="radiogroup" aria-label="Skill level">${skillSeg}</div>
         </div>
         <div class="sheet-actions">
           <button class="btn ghost small" id="add-cancel">Cancel</button>
@@ -396,9 +396,9 @@ export function renderLive(root, go, session) {
           if (saveBtn) saveBtn.disabled = !addDraft.name.trim() || state.players.length >= 12;
         };
       }
-      root.querySelectorAll('#add-skill-dots .dot').forEach(d => {
-        d.onclick = () => {
-          addDraft.skill = +d.dataset.addSkill;
+      root.querySelectorAll('#add-skill-seg .segment[data-add-skill]').forEach(seg => {
+        seg.onclick = () => {
+          addDraft.skill = +seg.dataset.addSkill;
           render();
           root.querySelector('#add-name')?.focus();
         };
