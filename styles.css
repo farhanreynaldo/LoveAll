@@ -447,6 +447,33 @@ input.edit-score-input {
   border-top: 1px solid var(--border);
 }
 
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  margin-bottom: 12px;
+  background: var(--border);
+  border-radius: 10px;
+}
+.segment {
+  flex: 1;
+  padding: 8px 12px;
+  min-height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-control);
+  cursor: pointer;
+}
+.segment.is-active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
 .schedule-hint {
   font-size: var(--text-meta);
   color: var(--text-secondary);

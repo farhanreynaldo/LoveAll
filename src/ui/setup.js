@@ -1,15 +1,17 @@
 import { createSession } from '../state.js';
 import { saveSession, saveLastRoster, loadLastRoster } from '../persistence.js';
 
-const MIN_PLAYERS = 4;
+const MIN_BY_FORMAT = { doubles: 4, singles: 2 };
 const MAX_PLAYERS = 12;
 
 export function renderSetup(root, go) {
   const players = [];
   let nextIdCounter = 1;
+  let format = 'doubles';
   const lastRoster = loadLastRoster();
 
   function genId() { return `p${nextIdCounter++}`; }
+  function minPlayers() { return MIN_BY_FORMAT[format]; }
 
   function skillDots(current, interactive = false) {
     const labels = { 1: 'Low', 2: 'Mid', 3: 'High' };
@@ -19,8 +21,9 @@ export function renderSetup(root, go) {
   }
 
   function render() {
-    const canStart = players.length >= MIN_PLAYERS;
-    const needed = MIN_PLAYERS - players.length;
+    const min = minPlayers();
+    const canStart = players.length >= min;
+    const needed = min - players.length;
 
     root.innerHTML = `
       <div class="screen-header">
@@ -34,6 +37,12 @@ export function renderSetup(root, go) {
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
         </div>
       </div>
+
+      <div class="segmented" role="radiogroup" aria-label="Match format">
+        <button type="button" class="segment ${format === 'doubles' ? 'is-active' : ''}" role="radio" aria-checked="${format === 'doubles'}" data-format="doubles">Doubles</button>
+        <button type="button" class="segment ${format === 'singles' ? 'is-active' : ''}" role="radio" aria-checked="${format === 'singles'}" data-format="singles">Singles</button>
+      </div>
+      ${format === 'singles' ? `<p class="roster-hint">Singles plays two at a time — everyone else rests and rotates in.</p>` : ''}
 
       <form id="add-form" style="display:flex;gap:6px;margin-bottom:12px;">
         <input type="text" id="new-name" placeholder="Type a name and tap +" autocomplete="off" />
@@ -100,6 +109,13 @@ export function renderSetup(root, go) {
       };
     });
 
+    root.querySelectorAll('.segment[data-format]').forEach(seg => {
+      seg.onclick = () => {
+        format = seg.dataset.format;
+        render();
+      };
+    });
+
     const reuseBtn = root.querySelector('#reuse-btn');
     if (reuseBtn) {
       reuseBtn.onclick = () => {
@@ -114,9 +130,9 @@ export function renderSetup(root, go) {
     }
 
     root.querySelector('#start-btn').onclick = () => {
-      if (players.length < MIN_PLAYERS) return;
+      if (players.length < minPlayers()) return;
       saveLastRoster(players);
-      const session = createSession({ players: [...players] });
+      const session = createSession({ players: [...players], format });
       saveSession(session);
       go('live', session);
     };
