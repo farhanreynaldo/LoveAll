@@ -468,9 +468,11 @@ export function renderLive(root, go, session) {
           // it with a fair matchup, naturally favoring players who missed the
           // skipped round (lower roundsPlayed → lower cost).
           const ids = state.players.map(p => p.id);
+          const placeholder = state.format === 'singles'
+            ? { teamA: ids.slice(0, 1), teamB: ids.slice(1, 2) }
+            : { teamA: ids.slice(0, 2), teamB: ids.slice(2, 4) };
           newSchedule.push({
-            teamA: ids.slice(0, 2),
-            teamB: ids.slice(2, 4),
+            ...placeholder,
             status: 'tentative',
             score: null,
             manuallyEdited: false,
