@@ -13,11 +13,15 @@ export function renderSetup(root, go) {
   function genId() { return `p${nextIdCounter++}`; }
   function minPlayers() { return MIN_BY_FORMAT[format]; }
 
-  function skillDots(current, interactive = false) {
-    const labels = { 1: 'Low', 2: 'Mid', 3: 'High' };
-    return [1, 2, 3].map(n =>
-      `<span class="dot ${current >= n ? 'filled' : ''}" data-skill="${n}" role="button" aria-label="Set skill to ${labels[n]}" title="${labels[n]}"></span>`
-    ).join('');
+  const SKILL_LABELS = { 1: 'Low', 2: 'Mid', 3: 'High' };
+  function skillSeg(current, idx) {
+    return `
+      <div class="segmented compact skill-seg" role="radiogroup" aria-label="Skill level" data-idx="${idx}">
+        ${[1, 2, 3].map(n =>
+          `<button type="button" class="segment ${current === n ? 'is-active' : ''}" role="radio" aria-checked="${current === n}" data-skill="${n}">${SKILL_LABELS[n]}</button>`
+        ).join('')}
+      </div>
+    `;
   }
 
   function render() {
@@ -56,13 +60,13 @@ export function renderSetup(root, go) {
       ` : ''}
 
       ${players.length > 0 ? `
-        <p class="roster-hint">Tap dots to set skill: low, mid, high.</p>
+        <p class="roster-hint">Set each player's skill: low, mid, or high.</p>
         <div class="card" style="padding:4px 12px;">
           ${players.map((p, i) => `
             <div class="row roster-row" data-idx="${i}">
               <input type="text" class="player-name" value="${escapeHtml(p.name)}" data-idx="${i}" />
               <span class="roster-skill-label">Skill</span>
-              <div class="skill-dots" data-idx="${i}">${skillDots(p.seedSkill)}</div>
+              ${skillSeg(p.seedSkill, i)}
               <button class="icon-btn remove-btn" data-idx="${i}" aria-label="remove">×</button>
             </div>
           `).join('')}
@@ -94,10 +98,11 @@ export function renderSetup(root, go) {
       };
     });
 
-    root.querySelectorAll('.skill-dots').forEach(dots => {
-      dots.onclick = e => {
-        if (!e.target.classList.contains('dot')) return;
-        players[+dots.dataset.idx].seedSkill = +e.target.dataset.skill;
+    root.querySelectorAll('.skill-seg').forEach(seg => {
+      seg.onclick = e => {
+        const btn = e.target.closest('.segment[data-skill]');
+        if (!btn) return;
+        players[+seg.dataset.idx].seedSkill = +btn.dataset.skill;
         render();
       };
     });
