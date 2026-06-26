@@ -18,7 +18,7 @@ function blankPerPlayer(playerIds, value) {
   return out;
 }
 
-export function createSession({ players, targetRounds = 30, seed = Date.now() >>> 0, weights = DEFAULT_WEIGHTS, k = 32 }) {
+export function createSession({ players, targetRounds = 30, seed = Date.now() >>> 0, weights = DEFAULT_WEIGHTS, k = 32, format = 'doubles' }) {
   const ids = players.map(p => p.id);
   const state = {
     players,
@@ -26,6 +26,7 @@ export function createSession({ players, targetRounds = 30, seed = Date.now() >>
     seed,
     weights,
     k,
+    format,
     elo: Object.fromEntries(players.map(p => [p.id, seedElo(p.seedSkill)])),
     roundsPlayed: blankPerPlayer(ids, 0),
     partnerCounts: blankCounts(ids),
@@ -91,6 +92,7 @@ export function recomputeFromCompleted(state) {
     seed: state.seed,
     weights: state.weights,
     k: state.k,
+    format: state.format ?? 'doubles',
   });
   // Overwrite the freshly-generated schedule with the existing one, but reset
   // each round's status/score; we will re-apply scores below.

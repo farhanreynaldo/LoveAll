@@ -84,3 +84,28 @@ test('createSession defaults to 30 rounds when targetRounds is omitted', () => {
   assert.equal(s.schedule.length, 30);
   for (const r of s.schedule) assert.equal(r.status, 'tentative');
 });
+
+test('createSession defaults to doubles when format omitted (back-compat)', () => {
+  const players = [
+    { id: 'a', name: 'A', seedSkill: 2 },
+    { id: 'b', name: 'B', seedSkill: 2 },
+    { id: 'c', name: 'C', seedSkill: 2 },
+    { id: 'd', name: 'D', seedSkill: 2 },
+  ];
+  const s = createSession({ players, targetRounds: 1, seed: 1 });
+  assert.equal(s.format, 'doubles');
+  assert.equal(s.schedule[0].teamA.length, 2);
+});
+
+test('createSession with format singles schedules 1v1 rounds', () => {
+  const players = [
+    { id: 'a', name: 'A', seedSkill: 2 },
+    { id: 'b', name: 'B', seedSkill: 2 },
+    { id: 'c', name: 'C', seedSkill: 2 },
+  ];
+  const s = createSession({ players, targetRounds: 2, seed: 1, format: 'singles' });
+  assert.equal(s.format, 'singles');
+  assert.equal(s.schedule.length, 2);
+  assert.equal(s.schedule[0].teamA.length, 1);
+  assert.equal(s.schedule[0].teamB.length, 1);
+});
