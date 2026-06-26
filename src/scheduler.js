@@ -24,7 +24,16 @@ function pairings(four) {
   ];
 }
 
-export function enumerateCandidates(players) {
+export function enumerateCandidates(players, format = 'doubles') {
+  if (format === 'singles') {
+    const out = [];
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        out.push({ teamA: [players[i]], teamB: [players[j]] });
+      }
+    }
+    return out;
+  }
   const out = [];
   for (const four of foursomes(players)) {
     for (const p of pairings(four)) out.push(p);
@@ -33,7 +42,7 @@ export function enumerateCandidates(players) {
 }
 
 export function pickBestCandidate(state, weights, rng) {
-  const candidates = enumerateCandidates(state.players);
+  const candidates = enumerateCandidates(state.players, state.format);
   let minCost = Infinity;
   let best = [];
   for (const c of candidates) {
@@ -57,10 +66,14 @@ export function simulate(state, candidate) {
   for (const p of onCourt) roundsPlayed[p] = (roundsPlayed[p] ?? 0) + 1;
 
   const inc = (map, x, y) => { map[x][y] = (map[x][y] ?? 0) + 1; };
-  inc(partnerCounts, candidate.teamA[0], candidate.teamA[1]);
-  inc(partnerCounts, candidate.teamA[1], candidate.teamA[0]);
-  inc(partnerCounts, candidate.teamB[0], candidate.teamB[1]);
-  inc(partnerCounts, candidate.teamB[1], candidate.teamB[0]);
+  for (const team of [candidate.teamA, candidate.teamB]) {
+    for (let i = 0; i < team.length; i++) {
+      for (let j = i + 1; j < team.length; j++) {
+        inc(partnerCounts, team[i], team[j]);
+        inc(partnerCounts, team[j], team[i]);
+      }
+    }
+  }
 
   for (const a of candidate.teamA) {
     for (const b of candidate.teamB) {
@@ -101,6 +114,7 @@ export function reoptimizeFrom(state, fromIndex, weights, rng) {
     players: Array.isArray(state.players) && typeof state.players[0] === 'object'
       ? state.players.map(p => p.id)
       : state.players,
+    format: state.format,
     roundsPlayed: { ...state.roundsPlayed },
     partnerCounts: structuredClone(state.partnerCounts),
     opponentCounts: structuredClone(state.opponentCounts),

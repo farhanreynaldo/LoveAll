@@ -120,3 +120,39 @@ test('reoptimizeFrom skips manually edited rounds', () => {
   assert.deepEqual(after[2].teamA, before.teamA);
   assert.deepEqual(after[2].teamB, before.teamB);
 });
+
+test('singles: enumerateCandidates yields C(n,2) candidates of 1v1', () => {
+  const ids = ['a','b','c','d','e'];
+  const cs = enumerateCandidates(ids, 'singles');
+  assert.equal(cs.length, 10); // 5 choose 2
+  for (const c of cs) {
+    assert.equal(c.teamA.length, 1);
+    assert.equal(c.teamB.length, 1);
+    assert.notEqual(c.teamA[0], c.teamB[0]);
+  }
+});
+
+test('singles: simulate leaves partnerCounts at zero and counts opponents + rounds', () => {
+  const s = blankState(['a','b','c','d']);
+  s.format = 'singles';
+  const next = simulate(s, { teamA: ['a'], teamB: ['b'] });
+  assert.equal(next.partnerCounts.a.b, 0);
+  assert.equal(next.partnerCounts.b.a, 0);
+  assert.equal(next.opponentCounts.a.b, 1);
+  assert.equal(next.opponentCounts.b.a, 1);
+  assert.equal(next.roundsPlayed.a, 1);
+  assert.equal(next.roundsPlayed.b, 1);
+  assert.equal(next.roundsPlayed.c, 0);
+});
+
+test('singles: generateSchedule produces 1v1 rounds and rotates fairly', () => {
+  const s = blankState(['a','b','c','d']);
+  s.format = 'singles';
+  const rng = createRng(42);
+  const rounds = generateSchedule(s, 4, DEFAULT_WEIGHTS, rng);
+  assert.equal(rounds.length, 4);
+  for (const r of rounds) {
+    assert.equal(r.teamA.length, 1);
+    assert.equal(r.teamB.length, 1);
+  }
+});
