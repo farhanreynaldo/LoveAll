@@ -1045,8 +1045,8 @@ input.edit-score-input {
   min-width: 0;
 }
 .segmented.compact .segment {
-  padding: 6px 8px;
-  min-height: 36px;
+  padding: 8px 8px;
+  min-height: 44px;
   font-size: var(--text-meta);
 }
 .roster-row .skill-seg {
