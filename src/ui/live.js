@@ -109,11 +109,19 @@ export function renderLive(root, go, session) {
       <div class="card score-card">
         <label class="match-team">
           <span class="team-name score-team-name">${escapeHtml(round.teamA.map(playerName).join(' & '))}</span>
-          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input${scoreDraft[0] === 0 ? ' is-empty' : ''}" data-team="0" value="${scoreDraft[0]}" aria-label="Score for ${escapeHtml(round.teamA.map(playerName).join(' and '))}" />
+          <div class="score-stepper">
+            <button type="button" class="stepper-btn" data-team="0" data-delta="-1" aria-label="decrease score">−</button>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input${scoreDraft[0] === 0 ? ' is-empty' : ''}" data-team="0" value="${scoreDraft[0]}" aria-label="Score for ${escapeHtml(round.teamA.map(playerName).join(' and '))}" />
+            <button type="button" class="stepper-btn" data-team="0" data-delta="1" aria-label="increase score">+</button>
+          </div>
         </label>
         <label class="match-team">
           <span class="team-name score-team-name">${escapeHtml(round.teamB.map(playerName).join(' & '))}</span>
-          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input${scoreDraft[1] === 0 ? ' is-empty' : ''}" data-team="1" value="${scoreDraft[1]}" aria-label="Score for ${escapeHtml(round.teamB.map(playerName).join(' and '))}" />
+          <div class="score-stepper">
+            <button type="button" class="stepper-btn" data-team="1" data-delta="-1" aria-label="decrease score">−</button>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input${scoreDraft[1] === 0 ? ' is-empty' : ''}" data-team="1" value="${scoreDraft[1]}" aria-label="Score for ${escapeHtml(round.teamB.map(playerName).join(' and '))}" />
+            <button type="button" class="stepper-btn" data-team="1" data-delta="1" aria-label="increase score">+</button>
+          </div>
         </label>
       </div>
 
@@ -130,7 +138,6 @@ export function renderLive(root, go, session) {
         <div class="label">Schedule</div>
         <p class="schedule-hint">
           Tap any round to edit
-          <span class="schedule-hint-sep" aria-hidden="true">·</span>
           <button class="text-link" id="schedule-toggle" type="button">
             ${scheduleExpanded ? 'Collapse ▴' : 'Show all ▾'}
           </button>
@@ -149,7 +156,7 @@ export function renderLive(root, go, session) {
             : (upcomingPreview ? (() => {
                 const realIdx0 = state.schedule.indexOf(upcomingPreview);
                 return `<div class="schedule-item" style="opacity:0.6;font-size:var(--text-meta);">
-                  R${realIdx0 + 1} · ${escapeHtml(upcomingPreview.teamA.map(playerName).join('/'))} vs ${escapeHtml(upcomingPreview.teamB.map(playerName).join('/'))}
+                  R${realIdx0 + 1}: ${escapeHtml(upcomingPreview.teamA.map(playerName).join('/'))} vs ${escapeHtml(upcomingPreview.teamB.map(playerName).join('/'))}
                 </div>`;
               })() : `<div class="schedule-item" style="opacity:0.6;font-size:var(--text-meta);">No upcoming rounds</div>`)
           }
@@ -185,8 +192,8 @@ export function renderLive(root, go, session) {
     const isLocked = r.status === 'locked';
     const isPlanned = r.status === 'tentative' || isLocked;
     const isEditable = isCompleted || isPlanned;
-    const tag = isCurrent ? '· now ' : '';
-    const scoreLabel = isCompleted && r.score ? ` · ${r.score[0]}:${r.score[1]}` : '';
+    const tag = isCurrent ? '<span class="now-pill">now</span> ' : '';
+    const scoreLabel = isCompleted && r.score ? ` ${r.score[0]}:${r.score[1]}` : '';
     const skipLabel = isSkipped ? (r.skipReason ? ` (skipped: ${escapeHtml(r.skipReason)})` : ' (skipped)') : '';
     const editedClass = r.manuallyEdited ? ' edited' : '';
     const showAffordance = isEditable && !isCurrent;
@@ -197,7 +204,7 @@ export function renderLive(root, go, session) {
       : '';
     return `
       <div class="schedule-item ${r.status}${editedClass}${showAffordance ? ' editable' : ''}${isCurrent ? ' is-current' : ''}" data-round-idx="${realIdx}" data-action="${isCompleted ? 'edit-score' : (isPlanned ? 'edit-players' : '')}">
-        <span>R${roundNum} ${tag}· ${teams}${scoreLabel}${skipLabel}</span>
+        <span>R${roundNum}: ${tag}${teams}${scoreLabel}${skipLabel}</span>
         ${affordanceGlyph}
       </div>
     `;
@@ -207,14 +214,22 @@ export function renderLive(root, go, session) {
     const r = state.schedule[i];
     return `
       <div class="schedule-item-editor" data-round-idx="${i}">
-        <div class="editor-label">Round ${i + 1} · edit final score</div>
+        <div class="editor-label">Round ${i + 1} — edit final score</div>
         <div class="match-team">
           <div class="editor-team-name">${escapeHtml(r.teamA.map(playerName).join(' & '))}</div>
-          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="0" value="${editScoreDraft[0]}" />
+          <div class="score-stepper">
+            <button type="button" class="stepper-btn edit-stepper-btn" data-team="0" data-delta="-1" aria-label="decrease score">−</button>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="0" value="${editScoreDraft[0]}" />
+            <button type="button" class="stepper-btn edit-stepper-btn" data-team="0" data-delta="1" aria-label="increase score">+</button>
+          </div>
         </div>
         <div class="match-team" style="border-top:1px solid var(--border-soft);">
           <div class="editor-team-name">${escapeHtml(r.teamB.map(playerName).join(' & '))}</div>
-          <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="1" value="${editScoreDraft[1]}" />
+          <div class="score-stepper">
+            <button type="button" class="stepper-btn edit-stepper-btn" data-team="1" data-delta="-1" aria-label="decrease score">−</button>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" class="score-input edit-score-input" data-team="1" value="${editScoreDraft[1]}" />
+            <button type="button" class="stepper-btn edit-stepper-btn" data-team="1" data-delta="1" aria-label="increase score">+</button>
+          </div>
         </div>
         <div class="editor-actions">
           <button class="btn small ghost" id="score-edit-cancel">Cancel</button>
@@ -231,7 +246,7 @@ export function renderLive(root, go, session) {
     };
     return `
       <div class="schedule-item-editor" data-round-idx="${i}">
-        <div class="editor-label">Round ${i + 1} · tap a player, then tap another to swap</div>
+        <div class="editor-label">Round ${i + 1} — tap a player, then tap another to swap</div>
         <div class="editor-section">
           <div class="editor-section-label">Team A</div>
           <div class="chip-row">
@@ -505,6 +520,7 @@ export function renderLive(root, go, session) {
   function bind() {
     // Score inputs (current round)
     root.querySelectorAll('.score-input[data-team]:not(.edit-score-input)').forEach(inp => {
+      inp.onfocus = e => e.target.select();
       inp.oninput = e => {
         const team = +e.target.dataset.team;
         const v = parseInt(e.target.value, 10);
@@ -512,6 +528,18 @@ export function renderLive(root, go, session) {
         e.target.classList.toggle('is-empty', scoreDraft[team] === 0);
         const saveBtn = root.querySelector('#save-btn');
         if (saveBtn) saveBtn.disabled = scoreDraft[0] + scoreDraft[1] === 0;
+      };
+    });
+
+    // Stepper buttons (current round)
+    root.querySelectorAll('.stepper-btn:not(.edit-stepper-btn)').forEach(btn => {
+      btn.onclick = () => {
+        const team = +btn.dataset.team;
+        const delta = +btn.dataset.delta;
+        scoreDraft[team] = Math.max(0, scoreDraft[team] + delta);
+        const saveBtn = root.querySelector('#save-btn');
+        if (saveBtn) saveBtn.disabled = scoreDraft[0] + scoreDraft[1] === 0;
+        render();
       };
     });
 
@@ -605,10 +633,21 @@ export function renderLive(root, go, session) {
 
     // Score-edit inputs
     root.querySelectorAll('.edit-score-input').forEach(inp => {
+      inp.onfocus = e => e.target.select();
       inp.oninput = e => {
         const team = +e.target.dataset.team;
         const v = parseInt(e.target.value, 10);
         editScoreDraft[team] = Number.isNaN(v) ? 0 : Math.max(0, v);
+      };
+    });
+
+    // Stepper buttons (score editor)
+    root.querySelectorAll('.edit-stepper-btn').forEach(btn => {
+      btn.onclick = () => {
+        const team = +btn.dataset.team;
+        const delta = +btn.dataset.delta;
+        editScoreDraft[team] = Math.max(0, editScoreDraft[team] + delta);
+        render();
       };
     });
 

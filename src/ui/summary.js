@@ -87,7 +87,7 @@ export function renderSummary(root, go, session) {
             </div>` : ''}
           <div class="recap-note">
             <span class="recap-note-label">Fairness</span>
-            <span class="recap-note-body">${roundsRange[0]}–${roundsRange[1]} rounds per player ${roundsRange[1] - roundsRange[0] <= 1 ? '· evenly spread' : ''}</span>
+            <span class="recap-note-body">${roundsRange[0]}–${roundsRange[1]} rounds per player${roundsRange[1] - roundsRange[0] <= 1 ? ', evenly spread' : ''}</span>
           </div>
           ${isSingles ? '' : `
           <div class="recap-note">
@@ -149,7 +149,7 @@ function formatDateLine(ts) {
   const date = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
   const hour = d.getHours();
   const slot = hour < 11 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  return `${day} ${slot} · ${date}`;
+  return `${day} ${slot}, ${date}`;
 }
 
 function firstName(full) {
@@ -198,7 +198,7 @@ async function shareRanking(ctx, btn) {
       return `${medal} ${p.name} — ${state.wins[p.id]}W ${state.losses[p.id]}L`;
     }),
     '',
-    `${completedRounds} rounds · ${totalGames} games · ${formatDurationPlain(elapsedMin)}`,
+    `${completedRounds} rounds | ${totalGames} games | ${formatDurationPlain(elapsedMin)}`,
   ];
   const text = lines.join('\n');
   const title = `LoveAll — ${firstName(champion.name)} wins the session`;
@@ -231,7 +231,7 @@ async function shareRanking(ctx, btn) {
   } catch { /* download unavailable; still try clipboard */ }
   try {
     await navigator.clipboard.writeText(text);
-    flashLabel(btn, 'Image saved · text copied');
+    flashLabel(btn, 'Image saved & text copied');
   } catch {
     flashLabel(btn, 'Image saved');
   }

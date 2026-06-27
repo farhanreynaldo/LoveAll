@@ -414,22 +414,34 @@ input.edit-score-input {
   margin: 0;
 }
 .score-input { -moz-appearance: textfield; }
-.score-controls {
+.score-stepper {
   display: flex;
-  gap: 6px;
-  margin-top: 4px;
+  align-items: center;
+  gap: 10px;
 }
-.score-controls button {
+.score-stepper input.score-input {
   flex: 1;
-  padding: 8px;
+  width: auto;
+  text-align: center;
+}
+.stepper-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  border-radius: 6px;
-  font-size: var(--text-input); /* glyph */
+  border-radius: 10px;
+  font-size: 1.4rem;
+  line-height: 1;
   cursor: pointer;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 100ms;
 }
+.stepper-btn:active { background: var(--border-soft); }
 
 .next-block {
   font-size: var(--text-meta);
@@ -478,8 +490,17 @@ input.edit-score-input {
 .label:has(+ .schedule-hint) {
   margin-bottom: 4px;
 }
-.schedule-hint-sep {
-  color: var(--border);
+.now-pill {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 0.7em;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-right: 2px;
 }
 .text-link {
   background: none;

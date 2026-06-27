@@ -43,13 +43,13 @@ export function renderPlayer(root, go, session, playerId) {
 
     <div class="player-intro">
       <div class="player-intro-name">${escapeHtml(firstName(player.name))}</div>
-      <div class="player-intro-meta">${rounds} rounds played · seeded ${escapeHtml(skillLabel.toLowerCase())} skill</div>
+      <div class="player-intro-meta">${rounds} rounds played, seeded ${escapeHtml(skillLabel.toLowerCase())} skill</div>
     </div>
 
     <div class="label">Record</div>
     <div class="card" style="padding: 4px 0;">
-      <div class="leader-row"><span class="name">Wins · Losses</span><span class="stat">${wins} W · ${losses} L</span></div>
-      <div class="leader-row"><span class="name">Games for · against</span><span class="stat">${gf} – ${ga}</span></div>
+      <div class="leader-row"><span class="name">Wins / Losses</span><span class="stat">${wins} W / ${losses} L</span></div>
+      <div class="leader-row"><span class="name">Games for / against</span><span class="stat">${gf} – ${ga}</span></div>
       <div class="leader-row"><span class="name">Rating</span><span class="stat">${elo} <span class="stat-quiet">(${eloSign}${eloDeltaAbs})</span></span></div>
     </div>
 

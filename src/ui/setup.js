@@ -47,7 +47,7 @@ export function renderSetup(root, go) {
 
       <form id="add-form" style="display:flex;gap:6px;margin-bottom:12px;">
         <input type="text" id="new-name" placeholder="Type a name and tap +" autocomplete="off" />
-        <button class="btn small" type="submit" ${players.length >= MAX_PLAYERS ? 'disabled' : ''} aria-label="Add player" style="white-space:nowrap;">+</button>
+        <button class="btn small" type="submit" ${players.length >= MAX_PLAYERS ? 'disabled' : ''} aria-label="Add player" style="white-space:nowrap;padding:10px 16px;">+</button>
       </form>
 
       ${players.length === 0 && lastRoster ? `
