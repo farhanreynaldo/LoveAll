@@ -38,15 +38,15 @@
 }
 
 body.dark {
-  --bg: #0a0e1a;
-  --surface: #131a2e;
-  --border: #2a3550;
-  --border-soft: #1a2540;
-  --text: #ffffff;
+  --bg: #0f0e0c;
+  --surface: #191714;
+  --border: #2e2a23;
+  --border-soft: #272320;
+  --text: #f0ede6;
   --text-secondary: #9c9892;
   --accent: #f5f3ec;
-  --accent-text: #0a0e1a;
-  --shadow: 0 4px 16px rgba(0,0,0,0.3);
+  --accent-text: #0f0e0c;
+  --shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
