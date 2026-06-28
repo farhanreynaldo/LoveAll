@@ -263,6 +263,7 @@ input.player-name {
 input.player-name:focus,
 input.player-name:focus-visible {
   outline: none;
+  box-shadow: none;
   border-bottom-color: var(--text);
 }
 
