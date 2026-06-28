@@ -136,6 +136,7 @@ body {
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 8px;
+  overflow: hidden;
 }
 .card.card-hero {
   padding: 16px;
@@ -179,6 +180,7 @@ body {
   width: 100%;
   cursor: pointer;
   font-family: inherit;
+  transition: opacity 140ms ease-out;
 }
 .btn:disabled { opacity: 0.4; }
 
@@ -202,6 +204,7 @@ body {
   line-height: var(--lh-display);
   padding: 8px;
   cursor: pointer;
+  transition: opacity 120ms ease-out;
 }
 
 input[type="text"], input[type="number"] {
@@ -213,6 +216,18 @@ input[type="text"], input[type="number"] {
   font-size: var(--text-input); /* 16px floor — anything smaller triggers iOS Safari auto-zoom on focus */
   font-family: inherit;
   width: 100%;
+}
+input::placeholder {
+  color: var(--text-secondary);
+  opacity: 1; /* Firefox applies 54% opacity by default */
+}
+/* Replace the global heavy outline on boxed inputs with a border-darkening
+   + soft glow pattern that integrates with the input's own border. */
+input[type="text"]:focus-visible,
+input[type="number"]:focus-visible {
+  outline: none;
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
 }
 
 /* Roster name input — inline, borderless, lives inside `.row`.
@@ -244,7 +259,7 @@ input.player-name:focus-visible {
 .roster-hint {
   font-size: var(--text-meta);
   color: var(--text-secondary);
-  margin: 0 4px 8px;
+  margin: 0 0 8px;
 }
 
 /* Roster row siblings around the name input. */
@@ -414,6 +429,10 @@ input.edit-score-input {
   margin: 0;
 }
 .score-input { -moz-appearance: textfield; }
+.score-input::selection {
+  background: var(--border);
+  color: var(--text);
+}
 .score-stepper {
   display: flex;
   align-items: center;
@@ -686,6 +705,7 @@ input.edit-score-input {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overflow: hidden;
 }
 .recap-stamp {
   display: flex;
@@ -944,6 +964,7 @@ input.edit-score-input {
   font-size: var(--text-meta);
   font-family: inherit;
   cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
 }
 .player-chip.selected {
   background: var(--accent);
@@ -1015,6 +1036,7 @@ input.edit-score-input {
   color: var(--text);
   font: inherit;
   cursor: pointer;
+  transition: background-color 140ms ease-out, border-color 140ms ease-out;
 }
 .preset-option.is-active {
   border-color: var(--accent);
@@ -1126,3 +1148,64 @@ input.edit-score-input {
 .lock-glyph { grid-area: glyph; width: 22px; height: 22px; }
 .lock-label { grid-area: label; font-weight: 600; font-size: var(--text-control); }
 .lock-hint { grid-area: hint; font-size: var(--text-meta); color: var(--text-secondary); }
+
+/* Fix: .roll-row.is-leader { background } comes after .roll-row:active in source,
+   winning on source-order tie (same specificity 0,2,0). Explicit rule restores
+   active feedback for the leader row. */
+.roll-row.is-leader:active {
+  background: color-mix(in oklch, var(--border) 75%, var(--text) 8%);
+}
+
+/* ---- Hover states — pointer-capable devices only ---- */
+@media (hover: hover) {
+  .roll-row:hover {
+    background: var(--border-soft);
+  }
+  .roll-row.is-leader:hover {
+    background: color-mix(in oklch, var(--border) 88%, var(--text) 5%);
+  }
+  .leader-row.clickable:hover {
+    background: var(--border-soft);
+  }
+  .schedule-item.editable:hover {
+    background: var(--border-soft);
+    transition: none;
+  }
+  .btn:not(:disabled):hover {
+    opacity: 0.82;
+  }
+  .btn.ghost:not(:disabled):hover {
+    opacity: 1;
+    background: var(--border-soft);
+  }
+  .segment:not(.is-active):hover {
+    color: var(--text);
+  }
+  .stepper-btn:hover {
+    background: var(--border-soft);
+  }
+  .player-chip:not(.selected):hover {
+    background: var(--border-soft);
+  }
+  .skill-pill:not(:active):hover {
+    background: var(--border-soft);
+  }
+  .preset-option:not(.is-active):hover {
+    background: var(--border-soft);
+  }
+  .icon-btn:hover {
+    opacity: 0.6;
+  }
+  .text-link:hover {
+    text-decoration-color: var(--text);
+  }
+  .undo-btn:hover {
+    opacity: 0.7;
+  }
+  .lock-toggle:not(.is-locked):hover {
+    background: var(--border-soft);
+  }
+  .menu-sheet .menu > button:hover {
+    background: var(--border-soft);
+  }
+}
