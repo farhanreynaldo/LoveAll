@@ -70,6 +70,12 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Suppress iOS double-tap-to-zoom on all interactive elements.
+   touch-action: manipulation keeps pinch-to-zoom intact on the page. */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
