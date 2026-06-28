@@ -161,7 +161,13 @@ button, a, [role="button"] {
 /* Roster-row tint: when the name input is being edited, the whole line
    lights up like a highlighted notebook entry. The input itself stays
    borderless; the tint is the affordance. */
-.row:focus-within { background: var(--border-soft); }
+.row:focus-within {
+  background: var(--border-soft);
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
 
 .match-vs {
   color: var(--text-secondary);
@@ -585,6 +591,10 @@ input.edit-score-input {
 }
 .schedule-item.editable:active {
   background: var(--border-soft);
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding-left: 12px;
+  padding-right: 12px;
   transition: none;
 }
 .schedule-item.is-current {
@@ -800,7 +810,13 @@ input.edit-score-input {
   min-height: 44px;
 }
 .roll-row:last-child { border-bottom: none; }
-.roll-row:active { background: var(--border-soft); }
+.roll-row:active {
+  background: var(--border-soft);
+  border-radius: 8px;
+  margin: 0 -14px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
 .roll-rank {
   flex: 0 0 28px;
   height: 28px;
@@ -1022,7 +1038,13 @@ input.edit-score-input {
 }
 
 .leader-row.clickable { cursor: pointer; }
-.leader-row.clickable:active { background: var(--border-soft); }
+.leader-row.clickable:active {
+  background: var(--border-soft);
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
 
 .preset-list {
   display: flex;
@@ -1166,15 +1188,27 @@ input.edit-score-input {
 @media (hover: hover) {
   .roll-row:hover {
     background: var(--border-soft);
+    border-radius: 8px;
+    margin: 0 -14px;
+    padding-left: 18px;
+    padding-right: 18px;
   }
   .roll-row.is-leader:hover {
     background: color-mix(in oklch, var(--border) 88%, var(--text) 5%);
   }
   .leader-row.clickable:hover {
     background: var(--border-soft);
+    border-radius: 8px;
+    margin: 0 -8px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
   .schedule-item.editable:hover {
     background: var(--border-soft);
+    border-radius: 8px;
+    margin: 0 -8px;
+    padding-left: 12px;
+    padding-right: 12px;
     transition: none;
   }
   .btn:not(:disabled):hover {
@@ -1213,5 +1247,9 @@ input.edit-score-input {
   }
   .menu-sheet .menu > button:hover {
     background: var(--border-soft);
+    border-radius: 8px;
+    margin: 0 -8px;
+    padding-left: 22px;
+    padding-right: 22px;
   }
 }
