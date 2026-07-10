@@ -15,6 +15,16 @@
 - Single-writer model: only the organizer device pushes state; no merge/conflict logic for concurrent writers (last-write-wins is accepted).
 - Whole-snapshot sync, not diffs — the state object is small.
 - Rooms expire ~48h after creation; history rows are permanent.
+- **Toolchain update (post-Task 3):** `worker/` requires Node >=22 (pinned via `worker/.nvmrc`; run `nvm use` in `worker/` before any `npm`/`npx` command there — the rest of the project is unaffected). The worker devDependencies are `wrangler@^4.110.0`, `vitest@^4.1.10`, `@cloudflare/vitest-pool-workers@^0.18.4` — newer than this plan's earlier tasks originally specified, because 0.6.16 has a test-teardown bug (fails whenever a single test makes 2+ requests to the same Durable Object instance). `worker/vitest.config.js` now uses the `cloudflareTest` Vite plugin from `@cloudflare/vitest-pool-workers` (not `defineWorkersConfig` from a `/config` subpath, which no longer exists):
+  ```js
+  import { defineConfig } from 'vitest/config';
+  import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
+
+  export default defineConfig({
+    plugins: [cloudflareTest({ wrangler: { configPath: './wrangler.toml' } })],
+  });
+  ```
+  Any later task that writes Miniflare/vitest-pool-workers test code should follow this current config shape, not the `defineWorkersConfig` example in Task 1's original text above.
 
 ---
 
