@@ -13,11 +13,6 @@ async function createRoom() {
   return res.json();
 }
 
-function connect(url) {
-  const [client, server] = Object.values(new WebSocketPair());
-  return { client, server, request: new Request(url, { headers: { Upgrade: 'websocket' } }) };
-}
-
 describe('live broadcast', () => {
   it('sends the current snapshot to a viewer on connect, then relays organizer updates', async () => {
     const { code, roomToken } = await createRoom();
