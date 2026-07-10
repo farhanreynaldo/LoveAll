@@ -18,6 +18,59 @@ export class SessionRoom {
       return new Response('ok', { status: 200 });
     }
 
+    if (url.pathname === '/organizer') {
+      const token = url.searchParams.get('token');
+      const creatorToken = await this.state.storage.get('creatorToken');
+      if (token !== creatorToken) return new Response('forbidden', { status: 403 });
+
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+      server.accept();
+      this.organizerSocket = server;
+      server.addEventListener('message', event => this.handleOrganizerMessage(event));
+      server.addEventListener('close', () => {
+        if (this.organizerSocket === server) this.organizerSocket = null;
+      });
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
+    if (url.pathname === '/watch') {
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+      server.accept();
+      this.viewers.add(server);
+      server.addEventListener('close', () => this.viewers.delete(server));
+      if (this.snapshot) server.send(JSON.stringify(this.snapshot));
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
     return new Response('not found', { status: 404 });
+  }
+
+  async handleOrganizerMessage(event) {
+    let message;
+    try {
+      message = JSON.parse(event.data);
+    } catch {
+      return; // ignore malformed frames
+    }
+    if (message.type !== 'snapshot' && message.type !== 'completed') return;
+
+    this.snapshot = message;
+    for (const viewer of this.viewers) {
+      try {
+        viewer.send(event.data);
+      } catch {
+        this.viewers.delete(viewer);
+      }
+    }
+
+    if (message.type === 'completed') {
+      await this.persistHistory(message.state);
+    }
+  }
+
+  async persistHistory(_state) {
+    // Implemented in Task 4.
   }
 }

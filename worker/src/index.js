@@ -37,6 +37,16 @@ export default {
       return createRoom(request, env);
     }
 
+    const roomMatch = url.pathname.match(/^\/rooms\/([A-Z2-9]{4})\/(organizer|watch)$/);
+    if (roomMatch) {
+      const [, code, route] = roomMatch;
+      const id = env.SESSION_ROOM.idFromName(code);
+      const stub = env.SESSION_ROOM.get(id);
+      const forwardUrl = new URL(request.url);
+      forwardUrl.pathname = `/${route}`;
+      return stub.fetch(new Request(forwardUrl, request));
+    }
+
     return new Response('not found', { status: 404 });
   },
 };
