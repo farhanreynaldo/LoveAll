@@ -1,0 +1,16 @@
+{
+  "name": "loveall-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0",
+    "vitest": "^2.1.0",
+    "@cloudflare/vitest-pool-workers": "^0.6.0"
+  }
+}

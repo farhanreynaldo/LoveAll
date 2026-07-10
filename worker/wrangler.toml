@@ -1,0 +1,16 @@
+name = "loveall-sync"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "SESSION_ROOM"
+class_name = "SessionRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SessionRoom"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "loveall_history"
+database_id = "REPLACE_AFTER_RUNNING_WRANGLER_D1_CREATE"
