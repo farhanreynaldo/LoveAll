@@ -3,6 +3,10 @@ import { reoptimizeFrom } from '../scheduler.js';
 import { createRng } from '../rng.js';
 import { saveSession, clearSession } from '../persistence.js';
 
+export function restingLabel(name, streak) {
+  return streak >= 1 ? `${name} · sat out ${streak}` : name;
+}
+
 export function renderLive(root, go, session) {
   let state = session;
   let scoreDraft = [0, 0];
@@ -100,7 +104,7 @@ export function renderLive(root, go, session) {
         <div class="label">Resting</div>
         <div class="card">
           <div class="row" style="border-bottom:none;padding:10px 4px;">
-            <span style="font-size:var(--text-control);color:var(--text-secondary);">${escapeHtml(restingIds.map(playerName).join(', '))}</span>
+            <span style="font-size:var(--text-control);color:var(--text-secondary);">${escapeHtml(restingIds.map(id => restingLabel(playerName(id), state.sitStreak[id] ?? 0)).join(', '))}</span>
           </div>
         </div>
       ` : ''}
