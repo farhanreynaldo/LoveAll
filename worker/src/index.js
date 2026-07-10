@@ -29,12 +29,33 @@ async function createRoom(request, env) {
   return new Response('could not allocate a room code', { status: 503 });
 }
 
+async function getHistory(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const match = auth.match(/^Bearer (.+)$/);
+  if (!match) return new Response('missing organizer token', { status: 401 });
+
+  const { results } = await env.DB.prepare(
+    'SELECT id, completed_at, standings_json FROM sessions WHERE organizer_token = ? ORDER BY completed_at DESC LIMIT 50'
+  ).bind(match[1]).all();
+
+  const rows = results.map(r => ({
+    id: r.id,
+    completedAt: r.completed_at,
+    standingsJson: JSON.parse(r.standings_json),
+  }));
+  return Response.json(rows);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === '/rooms' && request.method === 'POST') {
       return createRoom(request, env);
+    }
+
+    if (url.pathname === '/history' && request.method === 'GET') {
+      return getHistory(request, env);
     }
 
     const roomMatch = url.pathname.match(/^\/rooms\/([A-Z2-9]{4})\/(organizer|watch)$/);

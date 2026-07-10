@@ -72,7 +72,10 @@ export class SessionRoom {
     }
   }
 
-  async persistHistory(_state) {
-    // Implemented in Task 4.
+  async persistHistory(state) {
+    const creatorToken = await this.state.storage.get('creatorToken');
+    await this.env.DB.prepare(
+      'INSERT INTO sessions (id, organizer_token, completed_at, standings_json) VALUES (?, ?, ?, ?)'
+    ).bind(crypto.randomUUID(), creatorToken, Date.now(), JSON.stringify(state.standings ?? state)).run();
   }
 }
