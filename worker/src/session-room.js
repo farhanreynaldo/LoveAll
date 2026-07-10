@@ -27,7 +27,9 @@ export class SessionRoom {
       const [client, server] = Object.values(pair);
       server.accept();
       this.organizerSocket = server;
-      server.addEventListener('message', event => this.handleOrganizerMessage(event));
+      server.addEventListener('message', event => {
+        this.handleOrganizerMessage(event);
+      });
       server.addEventListener('close', () => {
         if (this.organizerSocket === server) this.organizerSocket = null;
       });

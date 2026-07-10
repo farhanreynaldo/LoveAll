@@ -53,6 +53,9 @@ describe('live broadcast', () => {
     });
     organizerSocket.send(JSON.stringify({ type: 'snapshot', state: { round: 2 } }));
     expect(await updatePromise).toEqual({ type: 'snapshot', state: { round: 2 } });
+
+    organizerSocket.close();
+    viewerSocket.close();
   });
 
   it('rejects an organizer connection with the wrong token', async () => {
@@ -64,5 +67,6 @@ describe('live broadcast', () => {
       env
     );
     expect(res.status).toBe(403);
+    res.webSocket?.close();
   });
 });
