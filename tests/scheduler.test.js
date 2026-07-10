@@ -6,6 +6,7 @@ import {
   simulate,
   generateSchedule,
   reoptimizeFrom,
+  MAX_CONSECUTIVE_SIT,
 } from '../src/scheduler.js';
 import { createRng } from '../src/rng.js';
 import { DEFAULT_WEIGHTS } from '../src/cost.js';
@@ -146,6 +147,26 @@ test('generateSchedule distributes rest fairly for 6 players over 9 rounds', () 
   const max = Math.max(...counts);
   const min = Math.min(...counts);
   assert.ok(max - min <= 1, `rounds-played range too wide: ${min}..${max}`);
+});
+
+test('generateSchedule never lets a player sit out more than MAX_CONSECUTIVE_SIT rounds in a row', () => {
+  const state = blankState(['a','b','c','d','e','f']);
+  state.elo.a = 3000; // persistent skill outlier the optimizer wants to bench
+  let s = state;
+  for (const cand of generateSchedule(state, 10, DEFAULT_WEIGHTS, createRng(3))) {
+    s = simulate(s, cand);
+    for (const id of s.players) assert.ok(s.sitStreak[id] <= MAX_CONSECUTIVE_SIT);
+  }
+});
+
+test('singles: generateSchedule never lets a player sit out more than MAX_CONSECUTIVE_SIT rounds in a row (within court capacity)', () => {
+  const state = blankState(['a','b','c','d']);
+  state.format = 'singles';
+  let s = state;
+  for (const cand of generateSchedule(state, 8, DEFAULT_WEIGHTS, createRng(11))) {
+    s = simulate(s, cand);
+    for (const id of s.players) assert.ok(s.sitStreak[id] <= MAX_CONSECUTIVE_SIT);
+  }
 });
 
 test('reoptimizeFrom does not touch rounds before fromIndex', () => {
