@@ -157,6 +157,7 @@ export function reoptimizeFrom(state, fromIndex, weights, rng) {
       : state.players,
     format: state.format,
     roundsPlayed: { ...state.roundsPlayed },
+    sitStreak: { ...state.sitStreak },
     partnerCounts: structuredClone(state.partnerCounts),
     opponentCounts: structuredClone(state.opponentCounts),
     elo: { ...state.elo },
@@ -175,10 +176,13 @@ export function reoptimizeFrom(state, fromIndex, weights, rng) {
       s = simulate(s, existing);
       continue;
     }
+    const mandatory = mandatoryPlayers(s);
+    const existingOnCourt = new Set([...existing.teamA, ...existing.teamB]);
+    const violatesCap = mandatory.some(p => !existingOnCourt.has(p));
     const existingCost = computeCost(existing, s, weights);
     const candidate = pickBestCandidate(s, weights, rng);
     const candidateCost = computeCost(candidate, s, weights);
-    if (existingCost === 0 || candidateCost < existingCost * (1 - REPLACE_THRESHOLD)) {
+    if (violatesCap || existingCost === 0 || candidateCost < existingCost * (1 - REPLACE_THRESHOLD)) {
       result[i] = { ...existing, teamA: candidate.teamA, teamB: candidate.teamB };
     }
     s = simulate(s, result[i]);

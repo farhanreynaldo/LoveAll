@@ -171,6 +171,22 @@ test('reoptimizeFrom skips manually edited rounds', () => {
   assert.deepEqual(after[2].teamB, before.teamB);
 });
 
+test('reoptimizeFrom replaces a cap-violating round even though the swap is not cheaper', () => {
+  const ids = ['a','b','c','d','e','f'];
+  const state = blankState(ids);
+  // A round already exists that excludes 'a', and 'a' has already sat out
+  // the max consecutive rounds allowed — reoptimizeFrom must swap them in
+  // even though 'a' being a skill outlier makes every candidate involving
+  // them cost more than the existing (unfair) round.
+  state.elo.a = 3000;
+  state.sitStreak.a = 2;
+  const existingRound = { teamA: ['b','c'], teamB: ['d','e'], status: 'tentative', score: null, manuallyEdited: false };
+  const stateWithSchedule = { ...state, schedule: [existingRound] };
+  const result = reoptimizeFrom(stateWithSchedule, 0, DEFAULT_WEIGHTS, createRng(1));
+  const onCourt = [...result[0].teamA, ...result[0].teamB];
+  assert.ok(onCourt.includes('a'), 'a must be swapped in despite the existing round being cheaper');
+});
+
 test('singles: enumerateCandidates yields C(n,2) candidates of 1v1', () => {
   const ids = ['a','b','c','d','e'];
   const cs = enumerateCandidates(ids, 'singles');
