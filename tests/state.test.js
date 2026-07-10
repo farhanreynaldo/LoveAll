@@ -61,6 +61,19 @@ test('applyScore marks round completed and updates wins/losses/games/Elo/counts'
   assert.ok(s1.elo[r.teamA[0]] > 1300);
 });
 
+test('applyScore updates sitStreak: 0 for players in the round, +1 for everyone else', () => {
+  const s0 = createSession({ players: PLAYERS, targetRounds: 5, seed: 1 });
+  const s1 = applyScore(s0, 0, 6, 3);
+  const r = s1.schedule[0];
+  for (const id of [...r.teamA, ...r.teamB]) {
+    assert.equal(s1.sitStreak[id], 0);
+  }
+  const restingIds = PLAYERS.map(p => p.id).filter(id => !r.teamA.includes(id) && !r.teamB.includes(id));
+  for (const id of restingIds) {
+    assert.equal(s1.sitStreak[id], 1);
+  }
+});
+
 test('recomputeFromCompleted rebuilds derived state from scratch', () => {
   let s = createSession({ players: PLAYERS, targetRounds: 4, seed: 1 });
   s = applyScore(s, 0, 6, 4);

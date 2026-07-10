@@ -69,11 +69,13 @@ export function applyScore(state, roundIndex, gamesA, gamesB) {
   const sim = simulate({
     players: next.players.map(p => p.id),
     roundsPlayed: next.roundsPlayed,
+    sitStreak: next.sitStreak,
     partnerCounts: next.partnerCounts,
     opponentCounts: next.opponentCounts,
     elo: next.elo,
   }, { teamA: r.teamA, teamB: r.teamB });
   next.roundsPlayed = sim.roundsPlayed;
+  next.sitStreak = sim.sitStreak;
   next.partnerCounts = sim.partnerCounts;
   next.opponentCounts = sim.opponentCounts;
 

@@ -61,6 +61,7 @@ export function simulate(state, candidate) {
   const partnerCounts = structuredClone(state.partnerCounts);
   const opponentCounts = structuredClone(state.opponentCounts);
   const roundsPlayed = { ...state.roundsPlayed };
+  const sitStreak = { ...state.sitStreak };
 
   const onCourt = [...candidate.teamA, ...candidate.teamB];
   // A completed round can reference a player who was later removed mid-session;
@@ -68,6 +69,9 @@ export function simulate(state, candidate) {
   // rebuild counts doesn't dereference a missing entry (they no longer count).
   for (const p of onCourt) {
     if (p in roundsPlayed) roundsPlayed[p] += 1;
+  }
+  for (const p of Object.keys(sitStreak)) {
+    sitStreak[p] = onCourt.includes(p) ? 0 : sitStreak[p] + 1;
   }
 
   const inc = (map, x, y) => {
@@ -90,7 +94,7 @@ export function simulate(state, candidate) {
     }
   }
 
-  return { ...state, partnerCounts, opponentCounts, roundsPlayed };
+  return { ...state, partnerCounts, opponentCounts, roundsPlayed, sitStreak };
 }
 
 export function generateSchedule(state, targetRounds, weights = DEFAULT_WEIGHTS, rng) {

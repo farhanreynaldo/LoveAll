@@ -15,14 +15,16 @@ function blankState(ids) {
   const opponentCounts = {};
   const elo = {};
   const roundsPlayed = {};
+  const sitStreak = {};
   for (const id of ids) {
     partnerCounts[id] = {};
     opponentCounts[id] = {};
     elo[id] = 1300;
     roundsPlayed[id] = 0;
+    sitStreak[id] = 0;
     for (const j of ids) if (j !== id) { partnerCounts[id][j] = 0; opponentCounts[id][j] = 0; }
   }
-  return { players: ids, partnerCounts, opponentCounts, elo, roundsPlayed };
+  return { players: ids, partnerCounts, opponentCounts, elo, roundsPlayed, sitStreak };
 }
 
 test('enumerateCandidates yields C(n,4)*3 candidates', () => {
@@ -70,6 +72,20 @@ test('simulate advances roundsPlayed and partner/opponent counts', () => {
   assert.equal(next.partnerCounts.b.a, 1);
   assert.equal(next.opponentCounts.a.c, 1);
   assert.equal(next.opponentCounts.c.a, 1);
+});
+
+test('simulate resets sitStreak for on-court players and increments it for resting players', () => {
+  const state = blankState(['a','b','c','d','e','f']);
+  state.sitStreak.e = 1;
+  state.sitStreak.f = 2;
+  const candidate = { teamA: ['a','b'], teamB: ['c','d'] };
+  const next = simulate(state, candidate);
+  assert.equal(next.sitStreak.a, 0);
+  assert.equal(next.sitStreak.b, 0);
+  assert.equal(next.sitStreak.c, 0);
+  assert.equal(next.sitStreak.d, 0);
+  assert.equal(next.sitStreak.e, 2);
+  assert.equal(next.sitStreak.f, 3);
 });
 
 test('simulate does not mutate input', () => {
