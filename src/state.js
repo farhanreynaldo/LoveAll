@@ -31,6 +31,7 @@ export function createSession({ players, targetRounds = 30, seed = Date.now() >>
     fairnessPreset,
     elo: Object.fromEntries(players.map(p => [p.id, seedElo(p.seedSkill)])),
     roundsPlayed: blankPerPlayer(ids, 0),
+    sitStreak: blankPerPlayer(ids, 0),
     partnerCounts: blankCounts(ids),
     opponentCounts: blankCounts(ids),
     wins: blankPerPlayer(ids, 0),
@@ -129,6 +130,7 @@ export function addPlayer(state, player) {
   const id = player.id;
   next.elo[id] = seedElo(player.seedSkill);
   next.roundsPlayed[id] = 0;
+  next.sitStreak[id] = 0;
   next.wins[id] = 0;
   next.losses[id] = 0;
   next.gamesFor[id] = 0;
@@ -156,6 +158,7 @@ export function removePlayer(state, playerId) {
   next.players = next.players.filter(p => p.id !== playerId);
   delete next.elo[playerId];
   delete next.roundsPlayed[playerId];
+  delete next.sitStreak[playerId];
   delete next.wins[playerId];
   delete next.losses[playerId];
   delete next.gamesFor[playerId];

@@ -32,6 +32,13 @@ test('createSession initializes players, schedule, weights, rng seed', () => {
   }
 });
 
+test('createSession initializes sitStreak to 0 for every player', () => {
+  const s = createSession({ players: PLAYERS, targetRounds: 8, seed: 42 });
+  for (const p of PLAYERS) {
+    assert.equal(s.sitStreak[p.id], 0);
+  }
+});
+
 test('applyScore marks round completed and updates wins/losses/games/Elo/counts', () => {
   const s0 = createSession({ players: PLAYERS, targetRounds: 5, seed: 1 });
   const s1 = applyScore(s0, 0, 6, 3);
@@ -73,12 +80,24 @@ test('addPlayer extends roster and zeroes their counts', () => {
   assert.equal(next.partnerCounts.a.g, 0);
 });
 
+test('addPlayer initializes sitStreak to 0 for the new player', () => {
+  const s = createSession({ players: PLAYERS, targetRounds: 4, seed: 1 });
+  const next = addPlayer(s, { id: 'g', name: 'Kai', seedSkill: 2 });
+  assert.equal(next.sitStreak.g, 0);
+});
+
 test('removePlayer drops them from state and all counts', () => {
   const s = createSession({ players: PLAYERS, targetRounds: 4, seed: 1 });
   const next = removePlayer(s, 'f');
   assert.equal(next.players.length, 5);
   assert.equal(next.elo.f, undefined);
   assert.equal(next.partnerCounts.a.f, undefined);
+});
+
+test('removePlayer drops the player from sitStreak', () => {
+  const s = createSession({ players: PLAYERS, targetRounds: 4, seed: 1 });
+  const next = removePlayer(s, 'f');
+  assert.equal(next.sitStreak.f, undefined);
 });
 
 test('removePlayer retains the name so historical rounds never show a raw id', () => {
