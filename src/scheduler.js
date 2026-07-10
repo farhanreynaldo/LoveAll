@@ -1,5 +1,31 @@
 import { computeCost, DEFAULT_WEIGHTS } from './cost.js';
 
+export const MAX_CONSECUTIVE_SIT = 2;
+
+function courtCapacity(format) {
+  return format === 'singles' ? 2 : 4;
+}
+
+function mandatoryPlayers(state) {
+  const sitStreak = state.sitStreak ?? {};
+  const capacity = courtCapacity(state.format);
+  let mandatory = state.players.filter(p => (sitStreak[p] ?? 0) >= MAX_CONSECUTIVE_SIT);
+  if (mandatory.length > capacity) {
+    mandatory = [...mandatory]
+      .sort((a, b) => (sitStreak[b] ?? 0) - (sitStreak[a] ?? 0))
+      .slice(0, capacity);
+  }
+  return mandatory;
+}
+
+function filterByMandatory(candidates, mandatory) {
+  if (mandatory.length === 0) return candidates;
+  return candidates.filter(c => {
+    const onCourt = new Set([...c.teamA, ...c.teamB]);
+    return mandatory.every(p => onCourt.has(p));
+  });
+}
+
 function foursomes(players) {
   const result = [];
   const n = players.length;
@@ -43,9 +69,12 @@ export function enumerateCandidates(players, format = 'doubles') {
 
 export function pickBestCandidate(state, weights, rng) {
   const candidates = enumerateCandidates(state.players, state.format);
+  const mandatory = mandatoryPlayers(state);
+  const filtered = filterByMandatory(candidates, mandatory);
+  const pool = filtered.length > 0 ? filtered : candidates;
   let minCost = Infinity;
   let best = [];
-  for (const c of candidates) {
+  for (const c of pool) {
     const cost = computeCost(c, state, weights);
     if (cost < minCost) {
       minCost = cost;

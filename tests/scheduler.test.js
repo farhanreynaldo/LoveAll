@@ -62,6 +62,40 @@ test('pickBestCandidate uses rng for ties; same seed → same pick', () => {
   assert.deepEqual(a, b);
 });
 
+test('pickBestCandidate forces in a player who has hit the consecutive sit-out cap, even against a strong skill penalty', () => {
+  const state = blankState(['a','b','c','d','e','f']);
+  // 'a' is a massive skill outlier: every candidate including them scores a
+  // large skill penalty relative to the tiny rest-penalty cost of excluding
+  // them for one more round.
+  state.elo.a = 3000;
+  state.sitStreak.a = 2; // already sat out 2 rounds in a row
+  const rng = createRng(1);
+  const best = pickBestCandidate(state, DEFAULT_WEIGHTS, rng);
+  assert.ok(best.teamA.includes('a') || best.teamB.includes('a'),
+    'a must be forced onto court once their sit streak hits the cap');
+});
+
+test('pickBestCandidate degrades gracefully when more players hit the cap than court capacity (singles)', () => {
+  const state = blankState(['a','b','c','d','e','f']);
+  state.format = 'singles';
+  state.sitStreak.a = 3;
+  state.sitStreak.b = 2;
+  state.sitStreak.c = 2;
+  const rng = createRng(1);
+  const best = pickBestCandidate(state, DEFAULT_WEIGHTS, rng);
+  const onCourt = [...best.teamA, ...best.teamB];
+  assert.equal(onCourt.length, 2);
+  assert.ok(onCourt.includes('a'), 'longest-waiting player (streak 3) must be prioritized');
+});
+
+test('pickBestCandidate is unaffected by the cap when no one has hit it', () => {
+  const state = blankState(['a','b','c','d','e','f']);
+  state.roundsPlayed.a = 5;
+  const rng = createRng(1);
+  const best = pickBestCandidate(state, DEFAULT_WEIGHTS, rng);
+  assert.ok(!best.teamA.includes('a') && !best.teamB.includes('a'));
+});
+
 test('simulate advances roundsPlayed and partner/opponent counts', () => {
   const state = blankState(['a','b','c','d','e','f']);
   const candidate = { teamA: ['a','b'], teamB: ['c','d'] };
