@@ -2,6 +2,8 @@ import { applyScore, removePlayer, addPlayer, recomputeFromCompleted } from '../
 import { reoptimizeFrom } from '../scheduler.js';
 import { createRng } from '../rng.js';
 import { saveSession, clearSession } from '../persistence.js';
+import { createSyncClient } from '../sync.js';
+import { WORKER_URL } from '../config.js';
 
 export function restingLabel(name, streak) {
   return streak >= 1 ? `${name} · sat out ${streak}` : name;
@@ -25,6 +27,7 @@ export function renderLive(root, go, session) {
   let editingScoreIdx = null;  // index of completed round whose score is being edited
   let editScoreDraft = [0, 0];
   let lastAnchoredRoundIdx = null;  // tracks which round we last scrolled to; null on first mount
+  let syncClient = null;
 
   function currentRoundIndex() {
     return state.schedule.findIndex(r => r.status !== 'completed' && r.status !== 'skipped');
@@ -51,6 +54,8 @@ export function renderLive(root, go, session) {
           <div class="title">Session</div>
           <div class="header-actions">
             <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+            <button class="icon-btn" id="share-live-btn" type="button" aria-label="share live">📡</button>
+            <span class="live-status-dot" id="live-status-dot" hidden></span>
             <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
           </div>
         </div>
@@ -82,6 +87,8 @@ export function renderLive(root, go, session) {
         <div class="title">Round ${idx + 1}</div>
         <div class="header-actions">
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
+          <button class="icon-btn" id="share-live-btn" type="button" aria-label="share live">📡</button>
+          <span class="live-status-dot" id="live-status-dot" hidden></span>
           <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
         </div>
       </div>
@@ -442,6 +449,7 @@ export function renderLive(root, go, session) {
           const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
           state = { ...state, schedule: reopt };
           persist();
+          syncClient.push(state);
           closeMenu();
         };
       }
@@ -475,6 +483,7 @@ export function renderLive(root, go, session) {
           const reopt = reoptimizeFrom(state, inCurrent ? idx : idx + 1, state.weights, rng);
           state = { ...state, schedule: reopt };
           persist();
+          syncClient.push(state);
           closeMenu();
         };
       }
@@ -514,6 +523,7 @@ export function renderLive(root, go, session) {
           state = { ...state, schedule: reopt };
           scoreDraft = [0, 0];
           persist();
+          syncClient.push(state);
           closeMenu();
         };
       }
@@ -522,6 +532,34 @@ export function renderLive(root, go, session) {
   }
 
   function bind() {
+    // Live sync client initialization and button wiring
+    if (!syncClient) {
+      syncClient = createSyncClient(WORKER_URL);
+      const statusDot = root.querySelector('#live-status-dot');
+      syncClient.onStatus(status => {
+        statusDot.hidden = status === 'idle';
+        statusDot.dataset.status = status;
+      });
+    }
+
+    const shareLiveBtn = root.querySelector('#share-live-btn');
+    if (shareLiveBtn) {
+      shareLiveBtn.onclick = async () => {
+        try {
+          const { watchUrl } = await syncClient.goLive();
+          if (navigator.share) {
+            await navigator.share({ title: 'Watch live scores', url: watchUrl });
+          } else {
+            await navigator.clipboard.writeText(watchUrl);
+            alert(`Link copied: ${watchUrl}`);
+          }
+        } catch (e) {
+          console.warn('Could not go live', e);
+          alert('Could not start live sharing — check your connection and try again.');
+        }
+      };
+    }
+
     // Score inputs (current round)
     root.querySelectorAll('.score-input[data-team]:not(.edit-score-input)').forEach(inp => {
       inp.onfocus = e => e.target.select();
@@ -560,6 +598,7 @@ export function renderLive(root, go, session) {
         state = { ...state, schedule: reopt };
         scoreDraft = [0, 0];
         persist();
+        syncClient.push(state);
         render();
       };
     }
@@ -676,6 +715,7 @@ export function renderLive(root, go, session) {
         );
         state = recomputeFromCompleted({ ...state, schedule: patched });
         persist();
+        syncClient.push(state);
         editingScoreIdx = null;
         render();
       };
@@ -739,6 +779,7 @@ export function renderLive(root, go, session) {
         const reopt = reoptimizeFrom({ ...state, schedule: patchedSchedule }, i + 1, state.weights, rng);
         state = { ...state, schedule: reopt };
         persist();
+        syncClient.push(state);
         editingRoundIdx = null;
         editLocked = false;
         selectedChip = null;
