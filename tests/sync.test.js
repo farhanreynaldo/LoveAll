@@ -25,13 +25,14 @@ test('goLive posts to /rooms with the organizer token and opens a websocket', as
   }
   globalThis.WebSocket = FakeWebSocket;
   globalThis.fetch = fakeFetchReturning({ code: 'AB3D', roomToken: 'organizer-token' });
+  globalThis.location = { origin: 'https://loveall.example' };
 
   const { createSyncClient } = await import('../src/sync.js?t=' + Date.now());
   const client = createSyncClient('https://loveall.example');
 
   const result = await client.goLive();
   assert.equal(result.code, 'AB3D');
-  assert.equal(result.watchUrl, 'https://loveall.example/watch/AB3D');
+  assert.equal(result.watchUrl, 'https://loveall.example/watch.html?code=AB3D');
   assert.equal(FakeWebSocket.instances.length, 1);
   assert.match(FakeWebSocket.instances[0].url, /\/rooms\/AB3D\/organizer\?token=/);
 });
@@ -40,6 +41,7 @@ test('push debounces and sends the latest snapshot as JSON', async () => {
   globalThis.localStorage = { store: new Map(), getItem(k) { return this.store.get(k) ?? null; }, setItem(k, v) { this.store.set(k, v); } };
   globalThis.WebSocket = FakeWebSocket;
   globalThis.fetch = fakeFetchReturning({ code: 'ZZ99', roomToken: 'organizer-token' });
+  globalThis.location = { origin: 'https://loveall.example' };
 
   const { createSyncClient } = await import('../src/sync.js?t=' + Date.now());
   const client = createSyncClient('https://loveall.example');

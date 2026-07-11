@@ -3,7 +3,7 @@ import { buildStandings, formatDiff } from './recap-card.js';
 import { WORKER_URL } from './config.js';
 
 const root = document.getElementById('watch-root');
-const code = location.pathname.split('/').pop();
+const code = new URLSearchParams(location.search).get('code');
 
 function escapeHtml(s) {
   return String(s)

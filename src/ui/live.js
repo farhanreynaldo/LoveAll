@@ -4,6 +4,7 @@ import { createRng } from '../rng.js';
 import { saveSession, clearSession } from '../persistence.js';
 import { createSyncClient } from '../sync.js';
 import { WORKER_URL } from '../config.js';
+import { buildStandings } from '../recap-card.js';
 
 export function restingLabel(name, streak) {
   return streak >= 1 ? `${name} · sat out ${streak}` : name;
@@ -412,7 +413,7 @@ export function renderLive(root, go, session) {
 
     if (menuView === 'main') {
       const endBtn = root.querySelector('#end-session-btn');
-      if (endBtn) endBtn.onclick = () => { menuOpen = false; go('summary', state); };
+      if (endBtn) endBtn.onclick = () => { menuOpen = false; syncClient?.complete({ ...state, standings: buildStandings(state).ranked }); go('summary', state); };
       root.querySelector('#m-cancel').onclick = closeMenu;
       root.querySelector('#m-add').onclick = () => { menuView = 'add'; render(); };
       root.querySelector('#m-remove').onclick = () => { menuView = 'remove'; render(); };
@@ -638,11 +639,11 @@ export function renderLive(root, go, session) {
 
     // End session button on completed screen
     const endFinalBtn = root.querySelector('#end-session-final');
-    if (endFinalBtn) endFinalBtn.onclick = () => go('summary', state);
+    if (endFinalBtn) endFinalBtn.onclick = () => { syncClient?.complete({ ...state, standings: buildStandings(state).ranked }); go('summary', state); };
 
     // End session from the normal live screen, mid-session (no need to exhaust all rounds)
     const endLink = root.querySelector('#end-session-link');
-    if (endLink) endLink.onclick = () => go('summary', state);
+    if (endLink) endLink.onclick = () => { syncClient?.complete({ ...state, standings: buildStandings(state).ranked }); go('summary', state); };
 
     if (menuOpen) bindMenu();
 
