@@ -2,6 +2,18 @@ import { generateRoomCode } from './room-code.js';
 
 export { SessionRoom } from './session-room.js';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+};
+
+function withCors(response) {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(CORS_HEADERS)) headers.set(key, value);
+  return new Response(response.body, { status: response.status, headers });
+}
+
 function organizerToken(request) {
   const auth = request.headers.get('Authorization') || '';
   const match = auth.match(/^Bearer (.+)$/);
@@ -50,12 +62,16 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
     if (url.pathname === '/rooms' && request.method === 'POST') {
-      return createRoom(request, env);
+      return withCors(await createRoom(request, env));
     }
 
     if (url.pathname === '/history' && request.method === 'GET') {
-      return getHistory(request, env);
+      return withCors(await getHistory(request, env));
     }
 
     const roomMatch = url.pathname.match(/^\/rooms\/([A-Z2-9]{4})\/(organizer|watch)$/);
