@@ -32,7 +32,7 @@ export function createSyncClient(workerUrl) {
     socket.onclose = () => setStatus('offline');
     socket.onerror = () => setStatus('offline');
 
-    return { code, watchUrl: `${location.origin}/watch.html?code=${code}` };
+    return { code, watchUrl: new URL(`watch.html?code=${code}`, location.href).href };
   }
 
   function flush() {
