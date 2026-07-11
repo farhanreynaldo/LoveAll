@@ -8,9 +8,9 @@ class_name = "SessionRoom"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["SessionRoom"]
+new_sqlite_classes = ["SessionRoom"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "loveall_history"
-database_id = "REPLACE_AFTER_RUNNING_WRANGLER_D1_CREATE"
+database_id = "e1bd2517-77a9-4623-b567-86217a6c84df"
