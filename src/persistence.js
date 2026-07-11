@@ -52,6 +52,7 @@ export function loadDarkMode() {
 }
 
 const ROSTER_KEY = 'loveall:lastRoster';
+const ORGANIZER_TOKEN_KEY = 'loveall:organizerToken';
 
 export function saveLastRoster(players) {
   try {
@@ -72,4 +73,13 @@ export function loadLastRoster() {
   } catch (e) {
     return null;
   }
+}
+
+export function getOrganizerToken() {
+  let token = localStorage.getItem(ORGANIZER_TOKEN_KEY);
+  if (!token) {
+    token = crypto.randomUUID();
+    localStorage.setItem(ORGANIZER_TOKEN_KEY, token);
+  }
+  return token;
 }
