@@ -53,6 +53,7 @@ export function renderSettings(root, go, session) {
       </div>
 
       <button class="btn" id="save-btn" style="margin-top:16px;">Save &amp; re-optimize</button>
+      <button class="btn" id="history-btn" type="button" style="margin-top:8px;">Session history</button>
     `;
     bind();
   }
@@ -79,6 +80,8 @@ export function renderSettings(root, go, session) {
       saveSession(state);
       go('live', state);
     };
+
+    root.querySelector('#history-btn').onclick = () => go('history');
   }
 
   render();

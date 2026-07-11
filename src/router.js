@@ -3,6 +3,7 @@ import { renderLive } from './ui/live.js';
 import { renderSummary } from './ui/summary.js';
 import { renderSettings } from './ui/settings.js';
 import { renderPlayer } from './ui/player.js';
+import { renderHistory } from './ui/history.js';
 
 const root = () => document.getElementById('app');
 
@@ -14,6 +15,7 @@ export function go(screen, ...args) {
     case 'summary':  return renderSummary(root(), go, ...args);
     case 'settings': return renderSettings(root(), go, ...args);
     case 'player':   return renderPlayer(root(), go, ...args);
+    case 'history':  return renderHistory(root(), go);
     default: throw new Error(`Unknown screen: ${screen}`);
   }
 }
