@@ -28,7 +28,7 @@ export function createSyncClient(workerUrl) {
 
     const wsUrl = `${workerUrl.replace(/^http/, 'ws')}/rooms/${code}/organizer?token=${body.roomToken}`;
     socket = new WebSocket(wsUrl);
-    socket.onopen = () => setStatus('live');
+    socket.onopen = () => { setStatus('live'); flush(); };
     socket.onclose = () => setStatus('offline');
     socket.onerror = () => setStatus('offline');
 

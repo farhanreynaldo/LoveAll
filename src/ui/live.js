@@ -548,6 +548,7 @@ export function renderLive(root, go, session) {
       shareLiveBtn.onclick = async () => {
         try {
           const { watchUrl } = await syncClient.goLive();
+          syncClient.push(state);
           if (navigator.share) {
             await navigator.share({ title: 'Watch live scores', url: watchUrl });
           } else {
