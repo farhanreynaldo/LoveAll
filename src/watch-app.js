@@ -5,12 +5,21 @@ import { WORKER_URL } from './config.js';
 const root = document.getElementById('watch-root');
 const code = location.pathname.split('/').pop();
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function render(state) {
   const { ranked } = buildStandings(state);
   root.innerHTML = `
     <h1>Live standings</h1>
     <ol>
-      ${ranked.map(p => `<li>${p.name} — ${p.wins}W ${p.losses}L (${formatDiff(p.gameDiff)})</li>`).join('')}
+      ${ranked.map(p => `<li>${escapeHtml(p.name)} — ${p.wins}W ${p.losses}L (${formatDiff(p.gameDiff)})</li>`).join('')}
     </ol>
   `;
 }
