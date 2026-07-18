@@ -29,6 +29,7 @@ export function renderLive(root, go, session) {
   let editScoreDraft = [0, 0];
   let lastAnchoredRoundIdx = null;  // tracks which round we last scrolled to; null on first mount
   let syncClient = null;
+  let endConfirmOpen = false;  // inline confirm for ending mid-session (a one-way action once endedAt is persisted)
 
   function currentRoundIndex() {
     return state.schedule.findIndex(r => r.status !== 'completed' && r.status !== 'skipped');
@@ -195,6 +196,18 @@ export function renderLive(root, go, session) {
           }
         </div>
       ` : ''}
+
+      <div class="next-block" id="end-session-block">
+        ${endConfirmOpen ? `
+          <p style="margin:0 0 8px;">End session now? This closes out today's play and can't be undone.</p>
+          <div class="editor-actions" style="margin-top:0;">
+            <button class="btn small ghost" id="end-session-cancel" type="button">Cancel</button>
+            <button class="btn small" id="end-session-confirm" type="button">End session</button>
+          </div>
+        ` : `
+          <button class="text-link" id="end-session-link" type="button">End session</button>
+        `}
+      </div>
 
       ${menuOpen ? menuHtml() : ''}
     `;
@@ -434,7 +447,7 @@ export function renderLive(root, go, session) {
 
     if (menuView === 'main') {
       const endBtn = root.querySelector('#end-session-btn');
-      if (endBtn) endBtn.onclick = () => { menuOpen = false; completeSession(); };
+      if (endBtn) endBtn.onclick = () => { menuOpen = false; endConfirmOpen = true; render(); };
       root.querySelector('#m-cancel').onclick = closeMenu;
       root.querySelector('#m-add').onclick = () => { menuView = 'add'; render(); };
       root.querySelector('#m-remove').onclick = () => { menuView = 'remove'; render(); };
@@ -645,6 +658,7 @@ export function renderLive(root, go, session) {
         addDraft = { name: '', skill: 2 };
         pendingRemoveId = null;
         skipReason = '';
+        endConfirmOpen = false;
         render();
       };
     }
@@ -660,13 +674,24 @@ export function renderLive(root, go, session) {
       };
     }
 
-    // End session button on completed screen
+    // End session button on completed screen — no confirm needed here: all
+    // rounds are already played out, there's no "still mid-swing" risk.
     const endFinalBtn = root.querySelector('#end-session-final');
     if (endFinalBtn) endFinalBtn.onclick = completeSession;
 
-    // Mid-session, ending only happens through the ⋯ menu now (bindMenu's
-    // #end-session-btn) — deliberately not inline next to Save, so it can't
-    // be mis-tapped in the same thumb motion (audit finding 4).
+    // Mid-session ending lives in its own block below the schedule, spaced
+    // and styled apart from Save/Skip (not the same row, not the same
+    // .quiet treatment) since it's a rare, irreversible action rather than
+    // a routine one (design-thinking pass, Norman + Few). Both this entry
+    // point and the ⋯ menu's route through the same inline confirm.
+    const endLink = root.querySelector('#end-session-link');
+    if (endLink) endLink.onclick = () => { endConfirmOpen = true; render(); };
+
+    const endCancel = root.querySelector('#end-session-cancel');
+    if (endCancel) endCancel.onclick = () => { endConfirmOpen = false; render(); };
+
+    const endConfirm = root.querySelector('#end-session-confirm');
+    if (endConfirm) endConfirm.onclick = completeSession;
 
     if (menuOpen) bindMenu();
 
