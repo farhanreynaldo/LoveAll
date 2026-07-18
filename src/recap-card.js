@@ -18,6 +18,22 @@ export function buildStandings(state) {
   return { ranked, podium: ranked.slice(0, 3), rest: ranked.slice(3) };
 }
 
+// Competition ranking (1, 1, 3, ...): players tied on both wins and
+// gameDiff share a rank, and the next distinct player's rank skips ahead
+// by the size of the tied group. Without this, an exact tie at the top
+// (a realistic outcome in a small round-robin) silently crowns whichever
+// player happens to sort first, with no indication it was a tie.
+export function withCompetitionRank(ranked) {
+  let rank = 1;
+  return ranked.map((p, i) => {
+    if (i > 0) {
+      const prev = ranked[i - 1];
+      if (p.wins !== prev.wins || p.gameDiff !== prev.gameDiff) rank = i + 1;
+    }
+    return { ...p, rank };
+  });
+}
+
 const CARD = {
   w: 1080, h: 1920, pad: 80,
   bg: '#fafaf7', surface: '#ffffff', ink: '#1a1a1a', secondary: '#8a8a85', border: '#e8e6df',

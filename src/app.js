@@ -24,6 +24,9 @@ if (!session) {
   go('setup');
 } else {
   const allDone = session.schedule.every(r => r.status === 'completed');
-  if (allDone) go('summary', session);
+  // session.endedAt covers an early end (before all rounds were played);
+  // allDone covers finishing every round without explicitly tapping "End
+  // session." Either means the session is over and belongs on the recap.
+  if (allDone || session.endedAt) go('summary', session);
   else go('live', session);
 }

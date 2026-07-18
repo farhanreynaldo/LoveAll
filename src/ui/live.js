@@ -1,8 +1,8 @@
 import { applyScore, removePlayer, addPlayer, recomputeFromCompleted } from '../state.js';
 import { reoptimizeFrom } from '../scheduler.js';
 import { createRng } from '../rng.js';
-import { saveSession, clearSession } from '../persistence.js';
-import { createSyncClient } from '../sync.js';
+import { saveSession, clearSession, appendLocalHistory } from '../persistence.js';
+import { createSyncClient, saveHistory } from '../sync.js';
 import { WORKER_URL } from '../config.js';
 import { buildStandings } from '../recap-card.js';
 
@@ -42,6 +42,28 @@ export function renderLive(root, go, session) {
 
   function persist() {
     saveSession(state);
+  }
+
+  // Ending a session always records it to local history (the source of
+  // truth, works fully offline) and best-effort pushes the same entry to
+  // the server, regardless of whether the organizer ever tapped "share
+  // live" — history must not depend on live sharing having been used.
+  //
+  // It also persists `endedAt` on the session itself. Without this, ending
+  // a session before all rounds complete was never durable: app.js's
+  // cold-start check only looked at whether every round was 'completed',
+  // so closing the app after an early end and reopening it would silently
+  // route back to the live scoring screen instead of the recap the
+  // organizer already saw (audit finding 8).
+  function completeSession() {
+    const standings = buildStandings(state).ranked;
+    state = { ...state, endedAt: Date.now() };
+    persist();
+    const entry = { id: crypto.randomUUID(), completedAt: state.endedAt, standings };
+    appendLocalHistory(entry);
+    syncClient?.complete({ ...state, standings });
+    saveHistory(WORKER_URL, entry);
+    go('summary', state);
   }
 
   function render() {
@@ -143,7 +165,6 @@ export function renderLive(root, go, session) {
       </button>
       <div class="inline-action-row">
         <button class="text-link quiet" id="skip-round-link" type="button">Skip this round</button>
-        <button class="text-link quiet" id="end-session-link" type="button">End session</button>
       </div>
 
       ${fullList.length > 0 ? `
@@ -245,7 +266,7 @@ export function renderLive(root, go, session) {
         </div>
         <div class="editor-actions">
           <button class="btn small ghost" id="score-edit-cancel">Cancel</button>
-          <button class="btn small" id="score-edit-save">Save</button>
+          <button class="btn small" id="score-edit-save" ${editScoreDraft[0] + editScoreDraft[1] === 0 ? 'disabled' : ''}>Save</button>
         </div>
       </div>
     `;
@@ -413,7 +434,7 @@ export function renderLive(root, go, session) {
 
     if (menuView === 'main') {
       const endBtn = root.querySelector('#end-session-btn');
-      if (endBtn) endBtn.onclick = () => { menuOpen = false; syncClient?.complete({ ...state, standings: buildStandings(state).ranked }); go('summary', state); };
+      if (endBtn) endBtn.onclick = () => { menuOpen = false; completeSession(); };
       root.querySelector('#m-cancel').onclick = closeMenu;
       root.querySelector('#m-add').onclick = () => { menuView = 'add'; render(); };
       root.querySelector('#m-remove').onclick = () => { menuView = 'remove'; render(); };
@@ -553,11 +574,12 @@ export function renderLive(root, go, session) {
             await navigator.share({ title: 'Watch live scores', url: watchUrl });
           } else {
             await navigator.clipboard.writeText(watchUrl);
-            alert(`Link copied: ${watchUrl}`);
+            flashLabel(shareLiveBtn, 'Copied');
           }
         } catch (e) {
+          if (e && e.name === 'AbortError') return; // user dismissed the native share sheet
           console.warn('Could not go live', e);
-          alert('Could not start live sharing — check your connection and try again.');
+          flashLabel(shareLiveBtn, 'Could not connect');
         }
       };
     }
@@ -640,11 +662,11 @@ export function renderLive(root, go, session) {
 
     // End session button on completed screen
     const endFinalBtn = root.querySelector('#end-session-final');
-    if (endFinalBtn) endFinalBtn.onclick = () => { syncClient?.complete({ ...state, standings: buildStandings(state).ranked }); go('summary', state); };
+    if (endFinalBtn) endFinalBtn.onclick = completeSession;
 
-    // End session from the normal live screen, mid-session (no need to exhaust all rounds)
-    const endLink = root.querySelector('#end-session-link');
-    if (endLink) endLink.onclick = () => { syncClient?.complete({ ...state, standings: buildStandings(state).ranked }); go('summary', state); };
+    // Mid-session, ending only happens through the ⋯ menu now (bindMenu's
+    // #end-session-btn) — deliberately not inline next to Save, so it can't
+    // be mis-tapped in the same thumb motion (audit finding 4).
 
     if (menuOpen) bindMenu();
 
@@ -683,6 +705,8 @@ export function renderLive(root, go, session) {
         const team = +e.target.dataset.team;
         const v = parseInt(e.target.value, 10);
         editScoreDraft[team] = Number.isNaN(v) ? 0 : Math.max(0, v);
+        const saveBtn = root.querySelector('#score-edit-save');
+        if (saveBtn) saveBtn.disabled = editScoreDraft[0] + editScoreDraft[1] === 0;
       };
     });
 
@@ -708,12 +732,10 @@ export function renderLive(root, go, session) {
     if (scoreSave) {
       scoreSave.onclick = () => {
         const i = editingScoreIdx;
-        if (editScoreDraft[0] + editScoreDraft[1] === 0) {
-          alert('Score cannot be 0–0.');
-          return;
-        }
+        // The Save button is disabled (see scoreEditorHtml) whenever the
+        // draft totals 0–0, so this handler can assume a valid score.
         const patched = state.schedule.map((r, j) =>
-          j === i ? { ...r, status: 'completed', score: [editScoreDraft[0], editScoreDraft[1]] } : r
+          j === i ? { ...r, status: 'completed', score: [editScoreDraft[0], editScoreDraft[1]], manuallyEdited: true } : r
         );
         state = recomputeFromCompleted({ ...state, schedule: patched });
         persist();
@@ -792,6 +814,19 @@ export function renderLive(root, go, session) {
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // In-place, non-blocking feedback in place of alert() (DESIGN.md §5: no
+  // native dialogs). Same pattern as summary.js's share-failure flash.
+  function flashLabel(btn, msg) {
+    if (!btn) return;
+    const prev = btn.textContent;
+    btn.textContent = msg;
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.textContent = prev;
+      btn.disabled = false;
+    }, 1600);
   }
 
   render();

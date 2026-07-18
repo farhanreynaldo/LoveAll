@@ -2,6 +2,27 @@ import { getOrganizerToken } from './persistence.js';
 
 const PUSH_DEBOUNCE_MS = 400;
 
+// Decoupled from the live room entirely: this is a plain, best-effort POST
+// so a session's history entry reaches the server whether or not the
+// organizer ever went live. The local archive (persistence.js) is the
+// source of truth; this is purely a cross-device convenience and is safe
+// to fail silently (offline, server down, etc.) since nothing depends on
+// it succeeding.
+export async function saveHistory(workerUrl, entry) {
+  try {
+    await fetch(`${workerUrl}/history`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getOrganizerToken()}`,
+      },
+      body: JSON.stringify(entry),
+    });
+  } catch (e) {
+    console.warn('Could not sync history to server', e);
+  }
+}
+
 export function createSyncClient(workerUrl) {
   let socket = null;
   let code = null;

@@ -41,6 +41,31 @@ async function createRoom(request, env) {
   return new Response('could not allocate a room code', { status: 503 });
 }
 
+async function saveHistory(request, env) {
+  const token = organizerToken(request);
+  if (!token) return new Response('missing organizer token', { status: 401 });
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response('invalid body', { status: 400 });
+  }
+  const { id, completedAt, standings } = body ?? {};
+  if (!id || !completedAt || !standings) {
+    return new Response('missing id, completedAt, or standings', { status: 400 });
+  }
+
+  // INSERT OR IGNORE: the client may retry the same entry (e.g. after a
+  // reload before confirming success), and id is the client-generated
+  // dedupe key, so a retry must be a no-op, not a duplicate row.
+  await env.DB.prepare(
+    'INSERT OR IGNORE INTO sessions (id, organizer_token, completed_at, standings_json) VALUES (?, ?, ?, ?)'
+  ).bind(id, token, completedAt, JSON.stringify(standings)).run();
+
+  return new Response('ok', { status: 200 });
+}
+
 async function getHistory(request, env) {
   const auth = request.headers.get('Authorization') || '';
   const match = auth.match(/^Bearer (.+)$/);
@@ -72,6 +97,10 @@ export default {
 
     if (url.pathname === '/history' && request.method === 'GET') {
       return withCors(await getHistory(request, env));
+    }
+
+    if (url.pathname === '/history' && request.method === 'POST') {
+      return withCors(await saveHistory(request, env));
     }
 
     const roomMatch = url.pathname.match(/^\/rooms\/([A-Z2-9]{4})\/(organizer|watch)$/);

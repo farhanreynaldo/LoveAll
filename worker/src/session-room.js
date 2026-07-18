@@ -66,16 +66,8 @@ export class SessionRoom {
         this.viewers.delete(viewer);
       }
     }
-
-    if (message.type === 'completed') {
-      await this.persistHistory(message.state);
-    }
-  }
-
-  async persistHistory(state) {
-    const creatorToken = await this.state.storage.get('creatorToken');
-    await this.env.DB.prepare(
-      'INSERT INTO sessions (id, organizer_token, completed_at, standings_json) VALUES (?, ?, ?, ?)'
-    ).bind(crypto.randomUUID(), creatorToken, Date.now(), JSON.stringify(state.standings ?? state)).run();
+    // Durable history is written by the client directly via POST /history
+    // (see index.js#saveHistory), decoupled from whether a live room ever
+    // existed. This room only relays live state to connected watchers.
   }
 }

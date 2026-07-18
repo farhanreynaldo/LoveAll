@@ -81,7 +81,7 @@ export function renderSettings(root, go, session) {
       go('live', state);
     };
 
-    root.querySelector('#history-btn').onclick = () => go('history');
+    root.querySelector('#history-btn').onclick = () => go('history', state);
   }
 
   render();

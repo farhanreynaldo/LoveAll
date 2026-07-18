@@ -15,7 +15,7 @@ export function go(screen, ...args) {
     case 'summary':  return renderSummary(root(), go, ...args);
     case 'settings': return renderSettings(root(), go, ...args);
     case 'player':   return renderPlayer(root(), go, ...args);
-    case 'history':  return renderHistory(root(), go);
+    case 'history':  return renderHistory(root(), go, ...args);
     default: throw new Error(`Unknown screen: ${screen}`);
   }
 }

@@ -45,10 +45,11 @@ export function renderSetup(root, go) {
         <button type="button" class="segment ${format === 'singles' ? 'is-active' : ''}" role="radio" aria-checked="${format === 'singles'}" data-format="singles">Singles</button>
       </div>
 
-      <form id="add-form" style="display:flex;gap:6px;margin-bottom:12px;">
+      <form id="add-form" style="display:flex;gap:6px;margin-bottom:6px;">
         <input type="text" id="new-name" placeholder="Type a name and tap +" autocomplete="off" />
         <button class="btn small" type="submit" ${players.length >= MAX_PLAYERS ? 'disabled' : ''} aria-label="Add player" style="white-space:nowrap;padding:10px 16px;">+</button>
       </form>
+      <p class="schedule-hint" id="duplicate-hint" style="margin-bottom:12px;" hidden>Already on the roster — that's OK if it's a different person</p>
 
       ${players.length === 0 && lastRoster ? `
         <button class="btn ghost small" id="reuse-btn" style="margin-bottom:12px;">
@@ -94,6 +95,17 @@ export function renderSetup(root, go) {
       input.value = '';
       render();
       root.querySelector('#new-name').focus();
+    };
+
+    // Same first name is a realistic, legitimate roster (two friends both
+    // named Mike) — this warns rather than blocks, so the organizer knows
+    // match displays elsewhere ("Mike & Sarah vs Mike & Dave") will be
+    // ambiguous, without stopping them from adding the second player.
+    const nameInput = root.querySelector('#new-name');
+    const dupHint = root.querySelector('#duplicate-hint');
+    nameInput.oninput = () => {
+      const n = nameInput.value.trim().toLowerCase();
+      dupHint.hidden = !(n.length > 0 && players.some(p => p.name.trim().toLowerCase() === n));
     };
 
     root.querySelectorAll('.player-name').forEach(inp => {

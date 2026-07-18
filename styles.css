@@ -928,11 +928,6 @@ input.edit-score-input {
   margin-top: 6px;
   letter-spacing: 0.0125em;
 }
-.stat-quiet {
-  color: var(--text-secondary);
-  font-weight: var(--weight-regular);
-  margin-left: 2px;
-}
 .leader-row {
   display: flex;
   align-items: center;

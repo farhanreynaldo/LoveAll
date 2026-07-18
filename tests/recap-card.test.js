@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildStandings, formatDiff } from '../src/recap-card.js';
+import { buildStandings, formatDiff, withCompetitionRank } from '../src/recap-card.js';
 
 function session(overrides = {}) {
   const players = overrides.players ?? [
@@ -47,4 +47,29 @@ test('buildStandings podium degrades for groups under 3', () => {
   const { podium, rest } = buildStandings(two);
   assert.equal(podium.length, 2);
   assert.equal(rest.length, 0);
+});
+
+test('withCompetitionRank gives distinct ranks when no one is tied', () => {
+  const { ranked } = buildStandings(session());
+  const withRanks = withCompetitionRank(ranked);
+  assert.deepEqual(withRanks.map(p => p.rank), [1, 2, 3, 4]);
+});
+
+test('withCompetitionRank gives tied players the same rank and skips ahead for the next distinct player', () => {
+  // a and b are tied for first (same wins, same gameDiff); c is alone in third.
+  const tiedAtTop = session({
+    maps: {
+      wins: { a: 5, b: 5, c: 3, d: 3 },
+      losses: { a: 1, b: 1, c: 2, d: 3 },
+      gamesFor: { a: 30, b: 30, c: 22, d: 20 },
+      gamesAgainst: { a: 16, b: 16, c: 19, d: 19 },
+    },
+  });
+  const { ranked } = buildStandings(tiedAtTop);
+  const withRanks = withCompetitionRank(ranked);
+  const byId = Object.fromEntries(withRanks.map(p => [p.id, p.rank]));
+  assert.equal(byId.a, 1);
+  assert.equal(byId.b, 1);
+  assert.equal(byId.c, 3); // skips rank 2 — two players already hold rank 1
+  assert.equal(byId.d, 4);
 });

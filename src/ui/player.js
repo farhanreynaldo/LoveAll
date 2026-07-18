@@ -1,5 +1,3 @@
-import { seedElo } from '../elo.js';
-
 export function renderPlayer(root, go, session, playerId) {
   const state = session;
   const player = state.players.find(p => p.id === playerId);
@@ -9,9 +7,6 @@ export function renderPlayer(root, go, session, playerId) {
     return;
   }
 
-  const elo = Math.round(state.elo[player.id] ?? 0);
-  const eloStart = seedElo(player.seedSkill);
-  const eloDelta = elo - eloStart;
   const wins = state.wins[player.id] ?? 0;
   const losses = state.losses[player.id] ?? 0;
   const gf = state.gamesFor[player.id] ?? 0;
@@ -28,9 +23,6 @@ export function renderPlayer(root, go, session, playerId) {
     .filter(p => p.id !== player.id)
     .map(p => ({ p, n: state.opponentCounts[player.id]?.[p.id] ?? 0 }))
     .sort((a, b) => b.n - a.n);
-
-  const eloSign = eloDelta > 0 ? '+' : eloDelta < 0 ? '−' : '±';
-  const eloDeltaAbs = Math.abs(eloDelta);
 
   root.innerHTML = `
     <div class="screen-header">
@@ -50,7 +42,6 @@ export function renderPlayer(root, go, session, playerId) {
     <div class="card" style="padding: 4px 0;">
       <div class="leader-row"><span class="name">Wins / Losses</span><span class="stat">${wins} W / ${losses} L</span></div>
       <div class="leader-row"><span class="name">Games for / against</span><span class="stat">${gf} – ${ga}</span></div>
-      <div class="leader-row"><span class="name">Rating</span><span class="stat">${elo} <span class="stat-quiet">(${eloSign}${eloDeltaAbs})</span></span></div>
     </div>
 
     <div class="label">Partner counts</div>

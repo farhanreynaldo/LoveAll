@@ -1,5 +1,5 @@
 import { clearSession } from '../persistence.js';
-import { buildStandings, formatDiff, renderRecapCard } from '../recap-card.js';
+import { buildStandings, formatDiff, renderRecapCard, withCompetitionRank } from '../recap-card.js';
 
 export function renderSummary(root, go, session) {
   const state = session;
@@ -11,7 +11,7 @@ export function renderSummary(root, go, session) {
   const completedRounds = state.schedule.filter(r => r.status === 'completed').length;
 
   const { ranked } = buildStandings(state);
-  const leaderboard = ranked;
+  const leaderboard = withCompetitionRank(ranked);
 
   const roundsRange = (() => {
     const vals = Object.values(state.roundsPlayed);
@@ -27,7 +27,10 @@ export function renderSummary(root, go, session) {
     return (sum / counts.length).toFixed(1);
   })();
 
-  const champion = leaderboard[0];
+  // A tie for first is a real, non-rare outcome in a small round-robin —
+  // co-champions are shown together rather than picking one arbitrarily.
+  const champions = leaderboard.filter(p => p.rank === 1);
+  const isTie = champions.length > 1;
   const dateLine = formatDateLine(state.startedAt);
 
   const mostPlayedPair = isSingles ? null : findMostPlayedPair(state);
@@ -48,8 +51,8 @@ export function renderSummary(root, go, session) {
       </header>
 
       <div class="recap-hero">
-        <div class="recap-kicker">Winner</div>
-        <div class="recap-champion">${escapeHtml(champion.name)}</div>
+        <div class="recap-kicker">${isTie ? 'Winners' : 'Winner'}</div>
+        <div class="recap-champion">${escapeHtml(champions.map(p => p.name).join(' & '))}</div>
       </div>
 
       <div class="recap-strip" role="group" aria-label="session totals">
@@ -59,9 +62,9 @@ export function renderSummary(root, go, session) {
       </div>
 
       <ol class="roll" aria-label="final standings">
-        ${leaderboard.map((p, i) => `
-            <li class="roll-row${i === 0 ? ' is-leader' : ''}" data-player-id="${p.id}">
-              <span class="roll-rank">${i + 1}</span>
+        ${leaderboard.map(p => `
+            <li class="roll-row${p.rank === 1 ? ' is-leader' : ''}" data-player-id="${p.id}">
+              <span class="roll-rank">${p.rank}</span>
               <span class="roll-name">${escapeHtml(p.name)}</span>
               <span class="roll-record">
                 <span class="roll-wl">${p.wins}–${p.losses}</span>
@@ -105,7 +108,7 @@ export function renderSummary(root, go, session) {
 
   function wireShare() {
     root.querySelector('#share-btn').onclick = () => shareRanking({
-      leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champion,
+      leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champions,
     }, root.querySelector('#share-btn'));
   }
 
@@ -189,19 +192,21 @@ function findClosestMatch(state) {
 }
 
 async function shareRanking(ctx, btn) {
-  const { leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champion } = ctx;
+  const { leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champions } = ctx;
   const lines = [
     `🎾 ${dateLine}`,
     '',
-    ...leaderboard.map((p, i) => {
-      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+    ...leaderboard.map(p => {
+      const medal = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : `${p.rank}.`;
       return `${medal} ${p.name} — ${state.wins[p.id]}W ${state.losses[p.id]}L`;
     }),
     '',
     `${completedRounds} rounds | ${totalGames} games | ${formatDurationPlain(elapsedMin)}`,
   ];
   const text = lines.join('\n');
-  const title = `LoveAll — ${firstName(champion.name)} wins the session`;
+  const title = champions.length > 1
+    ? `LoveAll — ${champions.map(p => firstName(p.name)).join(' & ')} tie for the win`
+    : `LoveAll — ${firstName(champions[0].name)} wins the session`;
 
   let blob;
   try {

@@ -53,6 +53,34 @@ export function loadDarkMode() {
 
 const ROSTER_KEY = 'loveall:lastRoster';
 const ORGANIZER_TOKEN_KEY = 'loveall:organizerToken';
+const HISTORY_KEY = 'loveall:history';
+const HISTORY_LIMIT = 50;
+
+// The local device is the source of truth for history: every completed
+// session is recorded here regardless of whether it was ever live-shared,
+// so "Session history" works fully offline. The server copy (pushed
+// best-effort in sync.js) exists only to see sessions completed on other
+// devices; it is not required for this device's own history to work.
+export function appendLocalHistory(entry) {
+  try {
+    const existing = loadLocalHistory().filter(e => e.id !== entry.id);
+    const next = [entry, ...existing].slice(0, HISTORY_LIMIT);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  } catch (e) {
+    console.error('Failed to save local history', e);
+  }
+}
+
+export function loadLocalHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
 
 export function saveLastRoster(players) {
   try {
