@@ -1,5 +1,5 @@
 import { clearSession } from '../persistence.js';
-import { buildStandings, formatDiff, renderRecapCard, withCompetitionRank } from '../recap-card.js';
+import { buildStandings, formatDiff, withCompetitionRank } from '../recap-card.js';
 
 export function renderSummary(root, go, session) {
   const state = session;
@@ -90,7 +90,7 @@ export function renderSummary(root, go, session) {
             </div>` : ''}
           <div class="recap-note">
             <span class="recap-note-label">Fairness</span>
-            <span class="recap-note-body">${roundsRange[0]}–${roundsRange[1]} rounds per player${roundsRange[1] - roundsRange[0] <= 1 ? ', evenly spread' : ''}</span>
+            <span class="recap-note-body">${roundsRange[0]}–${roundsRange[1]} rounds per player${state.mode === 'adaptive' ? ' (includes arrivals and departures)' : roundsRange[1] - roundsRange[0] <= 1 ? ', evenly spread' : ''}</span>
           </div>
           ${isSingles ? '' : `
           <div class="recap-note">
@@ -106,17 +106,9 @@ export function renderSummary(root, go, session) {
 
   const actions = root.querySelector('#recap-actions');
 
-  function wireShare() {
-    root.querySelector('#share-btn').onclick = () => shareRanking({
-      leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champions,
-    }, root.querySelector('#share-btn'));
-  }
-
   function showActions() {
     actions.innerHTML = `
-      <button class="btn" id="share-btn" type="button">Share the ranking</button>
-      <button class="btn ghost" id="new-btn" type="button">New session</button>`;
-    wireShare();
+      <button class="btn" id="new-btn" type="button">New session</button>`;
     root.querySelector('#new-btn').onclick = showConfirm;
   }
 
@@ -189,72 +181,4 @@ function findClosestMatch(state) {
     }
   });
   return best;
-}
-
-async function shareRanking(ctx, btn) {
-  const { leaderboard, state, dateLine, totalGames, completedRounds, elapsedMin, champions } = ctx;
-  const lines = [
-    `🎾 ${dateLine}`,
-    '',
-    ...leaderboard.map(p => {
-      const medal = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : `${p.rank}.`;
-      return `${medal} ${p.name} — ${state.wins[p.id]}W ${state.losses[p.id]}L`;
-    }),
-    '',
-    `${completedRounds} rounds | ${totalGames} games | ${formatDurationPlain(elapsedMin)}`,
-  ];
-  const text = lines.join('\n');
-  const title = champions.length > 1
-    ? `LoveAll — ${champions.map(p => firstName(p.name)).join(' & ')} tie for the win`
-    : `LoveAll — ${firstName(champions[0].name)} wins the session`;
-
-  let blob;
-  try {
-    blob = await renderRecapCard(state);
-  } catch {
-    flashLabel(btn, 'Could not build image');
-    return;
-  }
-
-  const file = new File([blob], 'loveall-ranking.png', { type: 'image/png' });
-
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title, text });
-      return;
-    } catch (err) {
-      if (err && err.name === 'AbortError') return;
-    }
-  }
-  // Fallback: download the image, copy the text.
-  try {
-    const url = URL.createObjectURL(file);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'loveall-ranking.png';
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch { /* download unavailable; still try clipboard */ }
-  try {
-    await navigator.clipboard.writeText(text);
-    flashLabel(btn, 'Image saved & text copied');
-  } catch {
-    flashLabel(btn, 'Image saved');
-  }
-}
-
-function flashLabel(btn, msg) {
-  if (!btn) return;
-  const prev = btn.textContent;
-  btn.textContent = msg;
-  btn.disabled = true;
-  setTimeout(() => {
-    btn.textContent = prev;
-    btn.disabled = false;
-  }, 1600);
-}
-
-function formatDurationPlain(min) {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }

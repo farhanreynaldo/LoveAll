@@ -1,8 +1,10 @@
 import { go } from './router.js';
 import { initTheme, toggleDarkMode } from './theme.js';
 import { loadSession } from './persistence.js';
+import { track } from './funnel.js';
 
 initTheme();
+track('visit', { source: new URLSearchParams(location.search).get('utm_source') || 'direct' });
 
 // Global dark-mode toggle: any element marked [data-theme-toggle] flips the theme.
 document.addEventListener('click', e => {
@@ -22,6 +24,8 @@ if ('serviceWorker' in navigator) {
 const session = loadSession();
 if (!session) {
   go('setup');
+} else if (session.mode === 'adaptive') {
+  go(session.endedAt ? 'summary' : 'adaptive-live', session);
 } else {
   const allDone = session.schedule.every(r => r.status === 'completed');
   // session.endedAt covers an early end (before all rounds were played);

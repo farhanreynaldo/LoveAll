@@ -121,6 +121,7 @@ button, a, [role="button"] {
   align-items: center;
   gap: 2px;
 }
+.setup-intro { color: var(--text-secondary); margin: -4px 0 20px; }
 .theme-toggle-btn {
   font-size: var(--text-title); /* glyph, not text */
   line-height: var(--lh-display);
@@ -147,6 +148,39 @@ button, a, [role="button"] {
 .card.card-hero {
   padding: 16px;
 }
+
+.adaptive-heading { font-size: 1.75rem; line-height: 1.1; margin: 24px 0 4px; }
+.adaptive-context, .adaptive-reason, .adaptive-hint { color: var(--text-secondary); font-size: var(--text-meta); }
+.adaptive-context { margin: 0 0 16px; }
+.adaptive-match { padding: 18px; }
+.adaptive-team { font-size: var(--text-stat); font-weight: var(--weight-bold); overflow-wrap: anywhere; }
+.adaptive-versus { color: var(--text-secondary); font-size: var(--text-meta); margin: 8px 0; }
+.adaptive-reason { margin: 8px 0 18px; }
+.adaptive-section { font-size: var(--text-title); margin: 28px 0 8px; }
+.adaptive-list { padding: 4px 12px; }
+.adaptive-row, .adaptive-player, .adaptive-history { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; }
+.adaptive-row + .adaptive-row, .adaptive-player + .adaptive-player, .adaptive-history + .adaptive-history { border-top: 1px solid var(--border-soft); }
+.adaptive-row span:last-child, .adaptive-player-meta { color: var(--text-secondary); font-size: var(--text-meta); }
+.adaptive-player-meta { display: block; }
+.adaptive-player > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.adaptive-player-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.adaptive-player-actions button, .adaptive-history button, .adaptive-edit button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 9px; color: var(--text); background: var(--surface); font: inherit; }
+.adaptive-player-actions button:disabled { opacity: .35; }
+.adaptive-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.adaptive-scores label { display: grid; gap: 6px; font-size: var(--text-meta); }
+.adaptive-scores input, .adaptive-edit input { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: 9px; padding: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: var(--text-input); }
+.adaptive-secondary { display: block; margin: 16px auto 0; }
+.adaptive-add { display: flex; gap: 8px; margin-top: 12px; }
+.adaptive-add input { min-width: 0; flex: 1; }
+.adaptive-add button { width: auto; }
+.adaptive-error { min-height: 20px; color: #9d3d32; font-size: var(--text-meta); }
+body.dark .adaptive-error { color: #ff9b8e; }
+.adaptive-empty { margin: 12px 0; color: var(--text-secondary); }
+.adaptive-history { align-items: flex-start; font-size: var(--text-meta); }
+.adaptive-edit { display: flex; gap: 6px; margin: 8px 0 16px; }
+.adaptive-edit input { width: 55px; }
+.adaptive-end { margin: 34px 0 16px; }
+.adaptive-end .btn { margin-bottom: 8px; }
 
 .row {
   display: flex;
@@ -219,16 +253,6 @@ button, a, [role="button"] {
   transition: opacity 120ms ease-out;
 }
 
-.live-status-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--muted, #999);
-}
-.live-status-dot[data-status="live"] { background: #2fa84f; }
-.live-status-dot[data-status="connecting"] { background: #d9a441; }
-.live-status-dot[data-status="offline"] { background: #c0392b; }
 
 input[type="text"], input[type="number"] {
   background: var(--surface);
@@ -1260,3 +1284,10 @@ input.edit-score-input {
     padding-right: 22px;
   }
 }
+.setup-group-label { display:block; margin:12px 0 6px; font-size:var(--text-meta); color:var(--text-secondary); }
+.setup-group-label span { font-weight:normal; }
+#group-name { width:100%; box-sizing:border-box; margin-bottom:16px; }
+.adaptive-lineup { display:grid; gap:10px; margin:0 0 16px; padding:16px; }
+.adaptive-lineup p { margin:0; color:var(--text-secondary); }
+.adaptive-lineup label { display:grid; gap:4px; font-size:var(--text-meta); }
+.adaptive-lineup select { width:100%; min-height:40px; padding:8px; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:8px; }

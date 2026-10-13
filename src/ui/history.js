@@ -58,7 +58,7 @@ export async function renderHistory(root, go, session) {
         <ul class="history-list">
           ${rows.map(row => `
             <li>
-              <span>${new Date(row.completedAt).toLocaleDateString()}</span>
+              <span>${escapeHtml(row.groupName || new Date(row.completedAt).toLocaleDateString())}</span>
               <span>${escapeHtml(row.standings?.[0]?.name ?? '—')} won</span>
             </li>
           `).join('')}

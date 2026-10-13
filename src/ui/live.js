@@ -2,7 +2,7 @@ import { applyScore, removePlayer, addPlayer, recomputeFromCompleted } from '../
 import { reoptimizeFrom } from '../scheduler.js';
 import { createRng } from '../rng.js';
 import { saveSession, clearSession, appendLocalHistory } from '../persistence.js';
-import { createSyncClient, saveHistory } from '../sync.js';
+import { saveHistory } from '../sync.js';
 import { WORKER_URL } from '../config.js';
 import { buildStandings } from '../recap-card.js';
 
@@ -28,7 +28,6 @@ export function renderLive(root, go, session) {
   let editingScoreIdx = null;  // index of completed round whose score is being edited
   let editScoreDraft = [0, 0];
   let lastAnchoredRoundIdx = null;  // tracks which round we last scrolled to; null on first mount
-  let syncClient = null;
   let endConfirmOpen = false;  // inline confirm for ending mid-session (a one-way action once endedAt is persisted)
 
   function currentRoundIndex() {
@@ -47,8 +46,7 @@ export function renderLive(root, go, session) {
 
   // Ending a session always records it to local history (the source of
   // truth, works fully offline) and best-effort pushes the same entry to
-  // the server, regardless of whether the organizer ever tapped "share
-  // live" — history must not depend on live sharing having been used.
+  // the server.
   //
   // It also persists `endedAt` on the session itself. Without this, ending
   // a session before all rounds complete was never durable: app.js's
@@ -62,7 +60,6 @@ export function renderLive(root, go, session) {
     persist();
     const entry = { id: crypto.randomUUID(), completedAt: state.endedAt, standings };
     appendLocalHistory(entry);
-    syncClient?.complete({ ...state, standings });
     saveHistory(WORKER_URL, entry);
     go('summary', state);
   }
@@ -78,8 +75,6 @@ export function renderLive(root, go, session) {
           <div class="title">Session</div>
           <div class="header-actions">
             <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
-            <button class="icon-btn" id="share-live-btn" type="button" aria-label="share live">📡</button>
-            <span class="live-status-dot" id="live-status-dot" hidden></span>
             <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
           </div>
         </div>
@@ -111,8 +106,6 @@ export function renderLive(root, go, session) {
         <div class="title">Round ${idx + 1}</div>
         <div class="header-actions">
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
-          <button class="icon-btn" id="share-live-btn" type="button" aria-label="share live">📡</button>
-          <span class="live-status-dot" id="live-status-dot" hidden></span>
           <button class="icon-btn" id="menu-btn" aria-label="menu">⋯</button>
         </div>
       </div>
@@ -484,7 +477,6 @@ export function renderLive(root, go, session) {
           const reopt = reoptimizeFrom(state, idx + 1, state.weights, rng);
           state = { ...state, schedule: reopt };
           persist();
-          syncClient.push(state);
           closeMenu();
         };
       }
@@ -518,7 +510,6 @@ export function renderLive(root, go, session) {
           const reopt = reoptimizeFrom(state, inCurrent ? idx : idx + 1, state.weights, rng);
           state = { ...state, schedule: reopt };
           persist();
-          syncClient.push(state);
           closeMenu();
         };
       }
@@ -558,7 +549,6 @@ export function renderLive(root, go, session) {
           state = { ...state, schedule: reopt };
           scoreDraft = [0, 0];
           persist();
-          syncClient.push(state);
           closeMenu();
         };
       }
@@ -567,36 +557,6 @@ export function renderLive(root, go, session) {
   }
 
   function bind() {
-    // Live sync client initialization and button wiring
-    if (!syncClient) {
-      syncClient = createSyncClient(WORKER_URL);
-      const statusDot = root.querySelector('#live-status-dot');
-      syncClient.onStatus(status => {
-        statusDot.hidden = status === 'idle';
-        statusDot.dataset.status = status;
-      });
-    }
-
-    const shareLiveBtn = root.querySelector('#share-live-btn');
-    if (shareLiveBtn) {
-      shareLiveBtn.onclick = async () => {
-        try {
-          const { watchUrl } = await syncClient.goLive();
-          syncClient.push(state);
-          if (navigator.share) {
-            await navigator.share({ title: 'Watch live scores', url: watchUrl });
-          } else {
-            await navigator.clipboard.writeText(watchUrl);
-            flashLabel(shareLiveBtn, 'Copied');
-          }
-        } catch (e) {
-          if (e && e.name === 'AbortError') return; // user dismissed the native share sheet
-          console.warn('Could not go live', e);
-          flashLabel(shareLiveBtn, 'Could not connect');
-        }
-      };
-    }
-
     // Score inputs (current round)
     root.querySelectorAll('.score-input[data-team]:not(.edit-score-input)').forEach(inp => {
       inp.onfocus = e => e.target.select();
@@ -635,7 +595,6 @@ export function renderLive(root, go, session) {
         state = { ...state, schedule: reopt };
         scoreDraft = [0, 0];
         persist();
-        syncClient.push(state);
         render();
       };
     }
@@ -764,7 +723,6 @@ export function renderLive(root, go, session) {
         );
         state = recomputeFromCompleted({ ...state, schedule: patched });
         persist();
-        syncClient.push(state);
         editingScoreIdx = null;
         render();
       };
@@ -828,7 +786,6 @@ export function renderLive(root, go, session) {
         const reopt = reoptimizeFrom({ ...state, schedule: patchedSchedule }, i + 1, state.weights, rng);
         state = { ...state, schedule: reopt };
         persist();
-        syncClient.push(state);
         editingRoundIdx = null;
         editLocked = false;
         selectedChip = null;
@@ -839,19 +796,6 @@ export function renderLive(root, go, session) {
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  // In-place, non-blocking feedback in place of alert() (DESIGN.md §5: no
-  // native dialogs). Same pattern as summary.js's share-failure flash.
-  function flashLabel(btn, msg) {
-    if (!btn) return;
-    const prev = btn.textContent;
-    btn.textContent = msg;
-    btn.disabled = true;
-    setTimeout(() => {
-      btn.textContent = prev;
-      btn.disabled = false;
-    }, 1600);
   }
 
   render();

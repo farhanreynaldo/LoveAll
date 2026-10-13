@@ -1,5 +1,7 @@
 import { createSession } from '../state.js';
-import { saveSession, saveLastRoster, loadLastRoster } from '../persistence.js';
+import { createAdaptiveSession } from '../adaptive-session.js';
+import { saveSession, saveLastRoster, loadLastRoster, saveGroup, loadGroup, loadLocalHistory } from '../persistence.js';
+import { track } from '../funnel.js';
 
 const MIN_BY_FORMAT = { doubles: 4, singles: 2 };
 const MAX_PLAYERS = 12;
@@ -9,7 +11,9 @@ export function renderSetup(root, go) {
   let nextIdCounter = 1;
   let format = 'doubles';
   let lastRemoved = null;  // { player, idx } of the most recent removal, for undo
-  const lastRoster = loadLastRoster();
+  const group = loadGroup();
+  const lastRoster = group?.players ?? loadLastRoster();
+  let groupName = group?.name ?? '';
 
   function genId() { return `p${nextIdCounter++}`; }
   function minPlayers() { return MIN_BY_FORMAT[format]; }
@@ -39,6 +43,11 @@ export function renderSetup(root, go) {
           <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="toggle dark mode" type="button">◐</button>
         </div>
       </div>
+
+      <p class="setup-intro">Add the players. LoveAll picks the first matchup and tracks who waits as people join or leave.</p>
+
+      <label class="setup-group-label" for="group-name">Group name <span>(optional)</span></label>
+      <input id="group-name" type="text" maxlength="40" placeholder="Thursday tennis" value="${escapeHtml(groupName)}" autocomplete="off" />
 
       <div class="segmented" role="radiogroup" aria-label="Match format">
         <button type="button" class="segment ${format === 'doubles' ? 'is-active' : ''}" role="radio" aria-checked="${format === 'doubles'}" data-format="doubles">Doubles</button>
@@ -102,6 +111,7 @@ export function renderSetup(root, go) {
     // match displays elsewhere ("Mike & Sarah vs Mike & Dave") will be
     // ambiguous, without stopping them from adding the second player.
     const nameInput = root.querySelector('#new-name');
+    root.querySelector('#group-name').oninput = e => { groupName = e.target.value; };
     const dupHint = root.querySelector('#duplicate-hint');
     nameInput.oninput = () => {
       const n = nameInput.value.trim().toLowerCase();
@@ -158,8 +168,8 @@ export function renderSetup(root, go) {
       reuseBtn.onclick = () => {
         for (const p of lastRoster) {
           if (players.length < MAX_PLAYERS) {
-            const skillRemap = { 1: 1, 2: 1, 3: 2, 4: 3, 5: 3 };
-            players.push({ id: genId(), name: p.name, seedSkill: skillRemap[p.seedSkill] ?? 2 });
+            const skill = Number(p.seedSkill);
+            players.push({ id: genId(), name: p.name, seedSkill: skill >= 1 && skill <= 3 ? skill : skill > 3 ? 3 : 2 });
           }
         }
         lastRemoved = null;
@@ -170,9 +180,17 @@ export function renderSetup(root, go) {
     root.querySelector('#start-btn').onclick = () => {
       if (players.length < minPlayers()) return;
       saveLastRoster(players);
-      const session = createSession({ players: [...players], format });
+      const name = groupName.trim();
+      const groupId = name ? (group?.id ?? crypto.randomUUID()) : null;
+      if (name) saveGroup({ id: groupId, name, players: players.map(({ name, seedSkill }) => ({ name, seedSkill })) });
+      const session = format === 'doubles'
+        ? createAdaptiveSession({ players: [...players] })
+        : createSession({ players: [...players], format });
+      if (name) { session.groupId = groupId; session.groupName = name; }
       saveSession(session);
-      go('live', session);
+      if (name && loadLocalHistory().some(row => row.groupId === groupId)) track('return_session', { format });
+      track('session_started', { format });
+      go(session.mode === 'adaptive' ? 'adaptive-live' : 'live', session);
     };
   }
 

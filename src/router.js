@@ -1,5 +1,6 @@
 import { renderSetup } from './ui/setup.js';
 import { renderLive } from './ui/live.js';
+import { renderAdaptiveLive } from './ui/adaptive-live.js';
 import { renderSummary } from './ui/summary.js';
 import { renderSettings } from './ui/settings.js';
 import { renderPlayer } from './ui/player.js';
@@ -12,6 +13,7 @@ export function go(screen, ...args) {
   switch (screen) {
     case 'setup':    return renderSetup(root(), go);
     case 'live':     return renderLive(root(), go, ...args);
+    case 'adaptive-live': return renderAdaptiveLive(root(), go, ...args);
     case 'summary':  return renderSummary(root(), go, ...args);
     case 'settings': return renderSettings(root(), go, ...args);
     case 'player':   return renderPlayer(root(), go, ...args);

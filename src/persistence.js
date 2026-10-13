@@ -52,6 +52,7 @@ export function loadDarkMode() {
 }
 
 const ROSTER_KEY = 'loveall:lastRoster';
+const GROUP_KEY = 'loveall:group';
 const ORGANIZER_TOKEN_KEY = 'loveall:organizerToken';
 const HISTORY_KEY = 'loveall:history';
 const HISTORY_LIMIT = 50;
@@ -101,6 +102,18 @@ export function loadLastRoster() {
   } catch (e) {
     return null;
   }
+}
+
+export function saveGroup(group) {
+  try { localStorage.setItem(GROUP_KEY, JSON.stringify(group)); }
+  catch (e) { console.error('Failed to save group', e); }
+}
+
+export function loadGroup() {
+  try {
+    const group = JSON.parse(localStorage.getItem(GROUP_KEY) || 'null');
+    return group && typeof group.name === 'string' && Array.isArray(group.players) ? group : null;
+  } catch { return null; }
 }
 
 export function getOrganizerToken() {
